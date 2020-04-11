@@ -5,7 +5,7 @@ mod problems;
 
 use actix_session::{CookieSession, Session};
 use actix_web::{http, middleware, post, web, App, Error, HttpResponse, HttpServer, Responder};
-use database::{actions, models};
+use database::models;
 use diesel::{
     pg::PgConnection,
     prelude::*,
@@ -24,7 +24,8 @@ async fn validate(session: &Session, pool: web::Data<DbPool>) -> Result<bool, Er
     let user = session.get::<models::User>("user")?;
     if let Some(user) = user {
         let valid = web::block(move || -> Result<bool, diesel::result::Error> {
-            Ok(actions::get_user(user.into(), &conn)?.is_some())
+            let user: models::NewUser = user.into();
+            Ok(user.get(&conn)?.is_some())
         })
         .await
         .map_err(|e| {
@@ -54,7 +55,7 @@ async fn create_problem(
         .map_err(|_| HttpResponse::BadRequest().finish())?;
     let new_problem = web::block(
         move || -> Result<models::DbProblem, diesel::result::Error> {
-            actions::insert_problem(new_db_problem, &conn)
+            new_db_problem.insert(&conn)
         },
     )
     .await
@@ -68,14 +69,14 @@ async fn create_problem(
 async fn query_problems(
     session: Session,
     pool: web::Data<DbPool>,
-    web::Query(req): web::Query<problems::ProblemQuery>,
+    web::Query(req): web::Query<models::ProblemQuery>,
 ) -> Result<impl Responder, Error> {
     if !validate(&session, pool.clone()).await? {
         return Ok(HttpResponse::BadRequest().finish());
     }
     let conn = pool.get().expect("couldn't get db connection from pool");
     let problems = web::block(move || -> Result<Vec<i32>, diesel::result::Error> {
-        actions::query_problems(req, &conn)
+        req.query(&conn)
     })
     .await
     .map_err(|e| {
@@ -96,10 +97,11 @@ async fn create_user(
     let conn = pool.get().expect("couldn't get db connection from pool");
     let new_user = web::block(
         move || -> Result<Option<models::User>, diesel::result::Error> {
-            if actions::get_user_by_name(req.name.clone(), &conn)?.is_some() {
+            if models::NewUser::get_by_name(req.name.clone(), &conn)?.is_some() {
                 return Ok(None);
             }
-            actions::insert_user(req.into_inner(), &conn).optional()
+            let req: models::NewUser = req.into_inner().into();
+            req.insert(&conn).optional()
         },
     )
     .await

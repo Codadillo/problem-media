@@ -111,19 +111,3 @@ pub enum FreeResponseSolution {
         eq: String,
     },
 }
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ProblemQuery {
-    #[serde(default)]
-    pub id: Option<i32>,
-    #[serde(default)]
-    pub owner_id: Option<i32>,
-    #[serde(default)]
-    pub topic: Option<Topic>,
-    #[serde(default)]
-    pub tags: Option<Vec<String>>,
-    #[serde(default)]
-    pub problem_type: Option<ProblemType>,
-    #[serde(default)]
-    pub max_results: Option<usize>,
-}
