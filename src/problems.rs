@@ -22,7 +22,7 @@ impl NewProblem {
     pub fn into_new_db_problem(self) -> Result<NewDbProblem, serde_json::Error> {
         Ok(NewDbProblem {
             owner_id: self.owner_id,
-            p_type: self.content.type_string(),
+            p_type: serde_json::to_string(&self.content.get_type())?,
             topic: serde_json::to_string(&self.topic)?,
             tags: self.tags,
             data: serde_json::to_string(&self.content)?,
@@ -55,25 +55,31 @@ pub enum ProblemContent {
     },
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ProblemType {
+    FreeResponse,
+    MultipleChoice,
+    Checklist,
+}
+
 impl ProblemContent {
-    pub fn type_string(&self) -> String {
+    pub fn get_type(&self) -> ProblemType {
         match self {
             ProblemContent::FreeResponse {
                 prompt: _,
                 restrictions: _,
-            } => "FreeResponse",
+            } => ProblemType::FreeResponse,
             ProblemContent::MultipleChoice {
                 prompt: _,
                 options: _,
                 solution: _,
-            } => "MultipleChoice",
+            } => ProblemType::MultipleChoice,
             ProblemContent::Checklist {
                 prompt: _,
                 options: _,
                 solution: _,
-            } => "Checklist",
+            } => ProblemType::Checklist,
         }
-        .to_string()
     }
 }
 
