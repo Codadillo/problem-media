@@ -5,13 +5,13 @@ mod problems;
 
 use actix_session::{CookieSession, Session};
 use actix_web::{middleware, post, web, App, Error, HttpResponse, HttpServer, Responder};
+use database::{actions, models};
 use diesel::{
     pg::PgConnection,
     prelude::*,
     r2d2::{self, ConnectionManager},
 };
 use env_logger::Env;
-use database::{actions, models};
 
 const PORT: i32 = 8080;
 const POSTGRES_CON: &'static str =
@@ -52,9 +52,11 @@ async fn create_problem(
         .into_inner()
         .into_new_db_problem()
         .map_err(|_| HttpResponse::BadRequest().finish())?;
-    let new_problem = web::block(move || -> Result<models::DbProblem, diesel::result::Error> {
-        actions::insert_problem(new_db_problem, &conn)
-    })
+    let new_problem = web::block(
+        move || -> Result<models::DbProblem, diesel::result::Error> {
+            actions::insert_problem(new_db_problem, &conn)
+        },
+    )
     .await
     .map_err(|e| {
         eprintln!("{}", e);
@@ -70,12 +72,14 @@ async fn create_user(
     req: web::Form<models::NewUser>,
 ) -> Result<impl Responder, Error> {
     let conn = pool.get().expect("couldn't get db connection from pool");
-    let new_user = web::block(move || -> Result<Option<models::User>, diesel::result::Error> {
-        if actions::get_user_by_name(req.name.clone(), &conn)?.is_some() {
-            return Ok(None);
-        }
-        actions::insert_user(req.into_inner(), &conn).optional()
-    })
+    let new_user = web::block(
+        move || -> Result<Option<models::User>, diesel::result::Error> {
+            if actions::get_user_by_name(req.name.clone(), &conn)?.is_some() {
+                return Ok(None);
+            }
+            actions::insert_user(req.into_inner(), &conn).optional()
+        },
+    )
     .await
     .map_err(|e| {
         eprintln!("{}", e);

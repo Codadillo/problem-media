@@ -1,5 +1,4 @@
-use super::models::*;
-use super::schema;
+use super::{models::*, schema};
 use diesel::{prelude::*, result};
 
 pub fn get_user(user: NewUser, conn: &PgConnection) -> Result<Option<User>, result::Error> {

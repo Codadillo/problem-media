@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
-use crate::problems::Problem;
 use super::schema::*;
+use crate::problems::Problem;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Queryable)]
 pub struct User {
