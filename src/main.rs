@@ -1,9 +1,7 @@
 #[macro_use]
 extern crate diesel;
-mod actions;
-mod models;
+mod database;
 mod problems;
-mod schema;
 
 use actix_session::{CookieSession, Session};
 use actix_web::{middleware, post, web, App, Error, HttpResponse, HttpServer, Responder};
@@ -13,7 +11,7 @@ use diesel::{
     r2d2::{self, ConnectionManager},
 };
 use env_logger::Env;
-use models::*;
+use database::{actions, models};
 
 const PORT: i32 = 8080;
 const POSTGRES_CON: &'static str =
@@ -23,7 +21,7 @@ type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
 async fn validate(session: &Session, pool: web::Data<DbPool>) -> Result<bool, Error> {
     let conn = pool.get().expect("couldn't get db connection from pool");
-    let user = session.get::<User>("user")?;
+    let user = session.get::<models::User>("user")?;
     if let Some(user) = user {
         let valid = web::block(move || -> Result<bool, diesel::result::Error> {
             Ok(actions::get_user(user.into(), &conn)?.is_some())
@@ -45,7 +43,7 @@ async fn create_problem(
     req: web::Json<problems::NewProblem>,
 ) -> Result<impl Responder, Error> {
     if !validate(&session, pool.clone()).await?
-        || req.owner_id != session.get::<User>("user")?.unwrap().id
+        || req.owner_id != session.get::<models::User>("user")?.unwrap().id
     {
         return Ok(HttpResponse::BadRequest().finish());
     }
@@ -54,7 +52,7 @@ async fn create_problem(
         .into_inner()
         .into_new_db_problem()
         .map_err(|_| HttpResponse::BadRequest().finish())?;
-    let new_problem = web::block(move || -> Result<DbProblem, diesel::result::Error> {
+    let new_problem = web::block(move || -> Result<models::DbProblem, diesel::result::Error> {
         actions::insert_problem(new_db_problem, &conn)
     })
     .await
@@ -69,10 +67,10 @@ async fn create_problem(
 async fn create_user(
     session: Session,
     pool: web::Data<DbPool>,
-    req: web::Form<NewUser>,
+    req: web::Form<models::NewUser>,
 ) -> Result<impl Responder, Error> {
     let conn = pool.get().expect("couldn't get db connection from pool");
-    let new_user = web::block(move || -> Result<Option<User>, diesel::result::Error> {
+    let new_user = web::block(move || -> Result<Option<models::User>, diesel::result::Error> {
         if actions::get_user_by_name(req.name.clone(), &conn)?.is_some() {
             return Ok(None);
         }
@@ -95,7 +93,7 @@ async fn create_user(
 async fn login(
     session: Session,
     pool: web::Data<DbPool>,
-    req: web::Form<NewUser>,
+    req: web::Form<models::NewUser>,
 ) -> Result<impl Responder, Error> {
     session.set("user", req.into_inner())?;
     Ok(if validate(&session, pool).await? {

@@ -1,4 +1,4 @@
-use crate::models::NewDbProblem;
+use crate::database::models::NewDbProblem;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
