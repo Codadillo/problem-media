@@ -4,7 +4,7 @@ mod database;
 mod problems;
 
 use actix_session::{CookieSession, Session};
-use actix_web::{http, middleware, post, web, App, Error, HttpResponse, HttpServer, Responder};
+use actix_web::{http, middleware, web, App, Error, HttpResponse, HttpServer, Responder};
 use database::models;
 use diesel::{
     pg::PgConnection,
@@ -88,11 +88,10 @@ async fn query_problems(
         .body(serde_json::to_string(&problems)?))
 }
 
-#[post("/api/account/create")]
 async fn create_user(
     session: Session,
     pool: web::Data<DbPool>,
-    req: web::Form<models::NewUser>,
+    req: web::Json<models::NewUser>,
 ) -> Result<impl Responder, Error> {
     let conn = pool.get().expect("couldn't get db connection from pool");
     let new_user = web::block(
@@ -117,11 +116,10 @@ async fn create_user(
     }
 }
 
-#[post("/api/account/login")]
 async fn login(
     session: Session,
     pool: web::Data<DbPool>,
-    req: web::Form<models::NewUser>,
+    req: web::Json<models::NewUser>,
 ) -> Result<impl Responder, Error> {
     session.set("user", req.into_inner())?;
     Ok(if validate(&session, pool).await? {
@@ -153,9 +151,10 @@ async fn main() -> std::io::Result<()> {
                     .path("/")
                     .secure(false),
             )
-            .service(create_user)
             .service(web::resource("/api/problem").route(web::get().to(query_problems)))
             .service(web::resource("/api/problem/create").route(web::post().to(create_problem)))
+            .service(web::resource("/api/account/login").route(web::post().to(login)))
+            .service(web::resource("/api/account/create").route(web::post().to(create_user)))
     })
     .bind(format!("127.0.0.1:{}", PORT))?
     .run()
