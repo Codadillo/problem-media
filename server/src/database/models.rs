@@ -1,5 +1,5 @@
 use super::schema::{self, *};
-use crate::problems::{Problem, ProblemType, Topic};
+use common::problems::{Problem, ProblemType, Topic};
 use diesel::{prelude::*, result};
 use serde::{Deserialize, Serialize};
 
@@ -139,10 +139,12 @@ pub struct NewDbProblem {
 }
 
 impl NewDbProblem {
-    pub fn from_new_problem(problem: common::problems::NewProblem) -> Result<Self, serde_json::Error> {
+    pub fn from_new_problem(
+        problem: common::problems::NewProblem,
+    ) -> Result<Self, serde_json::Error> {
         Ok(Self {
             owner_id: problem.owner_id,
-            p_type:  serde_json::to_string(&problem.content.get_type())?,
+            p_type: serde_json::to_string(&problem.content.get_type())?,
             topic: serde_json::to_string(&problem.topic)?,
             tags: problem.tags,
             data: serde_json::to_string(&problem.content)?,
