@@ -8,6 +8,47 @@ pub struct User {
     pub id: i32,
     pub name: String,
     pub pass: String,
+    pub recommended_ids: Vec<i32>,
+}
+
+impl User {
+    pub fn get_by_name(
+        user_name: String,
+        conn: &PgConnection,
+    ) -> Result<Option<User>, result::Error> {
+        use schema::users::dsl::*;
+        users.filter(name.eq(user_name)).get_result(conn).optional()
+    }
+
+    pub fn get_by_id(user_id: i32, conn: &PgConnection) -> Result<Option<User>, result::Error> {
+        use schema::users::dsl::*;
+        users.filter(id.eq(user_id)).get_result(conn).optional()
+    }
+
+    pub fn update_recommendations(&self, conn: &PgConnection) -> Result<(), result::Error> {
+        use schema::users::dsl::*;
+        diesel::update(users.filter(id.eq(self.id)))
+            .set(recommended_ids.eq(&self.recommended_ids))
+            .execute(conn)?;
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SessionUser {
+    pub id: i32,
+    pub name: String,
+    pub pass: String,
+}
+
+impl From<User> for SessionUser {
+    fn from(user: User) -> SessionUser {
+        SessionUser {
+            id: user.id,
+            name: user.name,
+            pass: user.pass,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Insertable)]
@@ -18,14 +59,6 @@ pub struct NewUser {
 }
 
 impl NewUser {
-    pub fn get_by_name(
-        user_name: String,
-        conn: &PgConnection,
-    ) -> Result<Option<User>, result::Error> {
-        use schema::users::dsl::*;
-        users.filter(name.eq(user_name)).get_result(conn).optional()
-    }
-
     pub fn get(&self, conn: &PgConnection) -> Result<Option<User>, result::Error> {
         use schema::users::dsl::*;
         users
@@ -50,6 +83,15 @@ impl From<User> for NewUser {
     }
 }
 
+impl From<SessionUser> for NewUser {
+    fn from(user: SessionUser) -> NewUser {
+        NewUser {
+            name: user.name,
+            pass: user.pass,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Queryable)]
 pub struct DbProblem {
     pub id: i32,
@@ -58,9 +100,23 @@ pub struct DbProblem {
     pub topic: String,
     pub tags: Vec<String>,
     pub data: String,
+    pub recommendations: i32,
 }
 
 impl DbProblem {
+    pub fn get_by_id(req_id: i32, conn: &PgConnection) -> Result<Option<Self>, result::Error> {
+        use schema::problems::dsl::*;
+        problems.filter(id.eq(req_id)).get_result(conn).optional()
+    }
+
+    pub fn update_recommendations(&self, conn: &PgConnection) -> Result<(), result::Error> {
+        use schema::problems::dsl::*;
+        diesel::update(problems.filter(id.eq(self.id)))
+            .set(recommendations.eq(self.recommendations))
+            .execute(conn)?;
+        Ok(())
+    }
+
     pub fn into_problem(self) -> Result<Problem, serde_json::Error> {
         Ok(Problem {
             id: self.id,

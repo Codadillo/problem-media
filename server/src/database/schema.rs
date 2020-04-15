@@ -3,6 +3,7 @@ table! {
         id -> Int4,
         name -> Varchar,
         pass -> Varchar,
+        recommended_ids -> Array<Int4>,
     }
 }
 
@@ -14,5 +15,6 @@ table! {
         topic -> Varchar,
         tags -> Array<Varchar>,
         data -> Varchar,
+        recommendations -> Int4,
     }
 }

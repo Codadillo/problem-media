@@ -22,7 +22,7 @@ type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
 async fn validate(session: &Session, pool: web::Data<DbPool>) -> Result<bool, Error> {
     let conn = pool.get().expect("couldn't get db connection from pool");
-    let user = session.get::<models::User>("user")?;
+    let user = session.get::<models::SessionUser>("user")?;
     if let Some(user) = user {
         let valid = web::block(move || -> Result<bool, diesel::result::Error> {
             let user: models::NewUser = user.into();
@@ -45,7 +45,7 @@ async fn create_problem(
     req: web::Json<problems::NewProblem>,
 ) -> Result<impl Responder, Error> {
     if !validate(&session, pool.clone()).await?
-        || req.owner_id != session.get::<models::User>("user")?.unwrap().id
+        || req.owner_id != session.get::<models::SessionUser>("user")?.unwrap().id
     {
         return Ok(HttpResponse::BadRequest().finish());
     }
@@ -67,6 +67,82 @@ async fn create_problem(
     Ok(HttpResponse::Ok().body(new_problem.into_problem()?.id.to_string()))
 }
 
+async fn get_problem(
+    session: Session,
+    pool: web::Data<DbPool>,
+    id: web::Path<i32>,
+) -> Result<impl Responder, Error> {
+    if !validate(&session, pool.clone()).await? {
+        return Ok(HttpResponse::BadRequest().finish());
+    }
+    let conn = pool.get().expect("couldn't get db connection from pool");
+    let problem = web::block(move || models::DbProblem::get_by_id(id.into_inner(), &conn))
+        .await
+        .map_err(|e| {
+            eprintln!("{}", e);
+            HttpResponse::InternalServerError().finish()
+        })?;
+    Ok(if let Some(problem) = problem {
+        HttpResponse::Ok()
+            .header(http::header::CONTENT_TYPE, "application/json")
+            .body(serde_json::to_string(&problem).unwrap())
+    } else {
+        HttpResponse::NotFound().finish()
+    })
+}
+
+async fn recommend_problem(
+    session: Session,
+    pool: web::Data<DbPool>,
+    req: web::Path<(i32, bool)>,
+) -> Result<impl Responder, Error> {
+    if !validate(&session, pool.clone()).await? {
+        return Ok(HttpResponse::BadRequest().finish());
+    }
+    let conn = pool.get().expect("couldn't get db connection from pool");
+    let id = req.0;
+    let undo = req.1;
+    let user = session.get::<models::SessionUser>("user")?;
+    if user.is_none() {
+        return Ok(HttpResponse::BadRequest().body("Invalid session"));
+    }
+    let user: models::NewUser = user.unwrap().into();
+    let resp = web::block(move || -> Result<Option<&str>, diesel::result::Error> {
+        let user = user.get(&conn)?;
+        if let Some(mut user) = user {
+            if user.recommended_ids.contains(&id) == !undo {
+                return Ok(Some("Attempt to recommend already problem"));
+            }
+            let problem = models::DbProblem::get_by_id(id, &conn)?;
+            if let Some(mut problem) = problem {
+                if undo {
+                    let id_index = user.recommended_ids.binary_search(&id).unwrap();
+                    user.recommended_ids.remove(id_index);
+                    problem.recommendations -= 1;
+                } else {
+                    user.recommended_ids.push(id);
+                    problem.recommendations += 1;
+                }
+                user.update_recommendations(&conn)?;
+                problem.update_recommendations(&conn)?;
+                Ok(None)
+            } else {
+                Ok(Some("Could not find requested problem"))
+            }
+        } else {
+            Ok(Some("Could not find session user"))
+        }
+    }).await.map_err(|e| {
+        eprintln!("{}", e);
+        HttpResponse::InternalServerError().finish()
+    })?;
+    if let Some(error) = resp {
+        Ok(HttpResponse::NotFound().body(error))
+    } else {
+        Ok(HttpResponse::Ok().finish())
+    }
+}
+
 async fn query_problems(
     session: Session,
     pool: web::Data<DbPool>,
@@ -76,13 +152,10 @@ async fn query_problems(
         return Ok(HttpResponse::BadRequest().finish());
     }
     let conn = pool.get().expect("couldn't get db connection from pool");
-    let problems =
-        web::block(move || -> Result<Vec<i32>, diesel::result::Error> { req.query(&conn) })
-            .await
-            .map_err(|e| {
-                eprintln!("{}", e);
-                HttpResponse::InternalServerError().finish()
-            })?;
+    let problems = web::block(move || req.query(&conn)).await.map_err(|e| {
+        eprintln!("{}", e);
+        HttpResponse::InternalServerError().finish()
+    })?;
     Ok(HttpResponse::Ok()
         .header(http::header::CONTENT_TYPE, "application/json")
         .body(serde_json::to_string(&problems)?))
@@ -96,7 +169,7 @@ async fn create_user(
     let conn = pool.get().expect("couldn't get db connection from pool");
     let new_user = web::block(
         move || -> Result<Option<models::User>, diesel::result::Error> {
-            if models::NewUser::get_by_name(req.name.clone(), &conn)?.is_some() {
+            if models::User::get_by_name(req.name.clone(), &conn)?.is_some() {
                 return Ok(None);
             }
             let req: models::NewUser = req.into_inner().into();
@@ -109,6 +182,7 @@ async fn create_user(
         HttpResponse::InternalServerError().finish()
     })?;
     Ok(if let Some(new_user) = new_user {
+        let new_user: models::SessionUser = new_user.into();
         session.set("user", new_user)?;
         HttpResponse::Ok()
     } else {
@@ -127,6 +201,7 @@ async fn login(
         HttpResponse::InternalServerError()
     })?;
     Ok(if let Some(user) = user {
+        let user: models::SessionUser = user.into();
         session.set("user", user)?;
         HttpResponse::Ok()
     } else {
@@ -165,6 +240,8 @@ async fn main() -> std::io::Result<()> {
             )
             .service(web::resource("/api/problem").route(web::get().to(query_problems)))
             .service(web::resource("/api/problem/create").route(web::post().to(create_problem)))
+            .service(web::resource("/api/problem/{id}").route(web::get().to(get_problem)))
+            .service(web::resource("/api/problem/{id}/recommend/{undo}").route(web::get().to(recommend_problem)))
             .service(web::resource("/api/account/login").route(web::post().to(login)))
             .service(web::resource("/api/account/create").route(web::post().to(create_user)))
         // .service(web::resource("*").route(web::get().to(|| HttpResponse::Ok().body("404 page"))))
