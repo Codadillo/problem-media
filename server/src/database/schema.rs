@@ -14,6 +14,7 @@ table! {
         p_type -> Varchar,
         topic -> Varchar,
         tags -> Array<Varchar>,
+        prompt -> Varchar,
         data -> Varchar,
         recommendations -> Int4,
     }

@@ -11,6 +11,7 @@ CREATE TABLE problems (
     p_type VarChar NOT NULL,
     topic VarChar NOT NULL,
     tags VarChar[] NOT NULL,
+    prompt VarChar NOT NULL,
     data VarChar NOT NULL,
     recommendations Int4 NOT NULL DEFAULT 0
 );

@@ -6,6 +6,7 @@ pub struct Problem {
     pub owner_id: i32,
     pub topic: Topic,
     pub tags: Vec<String>,
+    pub prompt: String,
     pub content: ProblemContent,
 }
 
@@ -14,6 +15,7 @@ pub struct NewProblem {
     pub owner_id: i32,
     pub topic: Topic,
     pub tags: Vec<String>,
+    pub prompt: String,
     pub content: ProblemContent,
 }
 
@@ -27,16 +29,13 @@ pub enum Topic {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ProblemContent {
     FreeResponse {
-        prompt: String,
         restrictions: Vec<FreeResponseSolution>,
     },
     MultipleChoice {
-        prompt: String,
         options: Vec<String>,
         solution: usize,
     },
     Checklist {
-        prompt: String,
         options: Vec<String>,
         solution: Vec<usize>,
     },
@@ -53,16 +52,13 @@ impl ProblemContent {
     pub fn get_type(&self) -> ProblemType {
         match self {
             ProblemContent::FreeResponse {
-                prompt: _,
                 restrictions: _,
             } => ProblemType::FreeResponse,
             ProblemContent::MultipleChoice {
-                prompt: _,
                 options: _,
                 solution: _,
             } => ProblemType::MultipleChoice,
             ProblemContent::Checklist {
-                prompt: _,
                 options: _,
                 solution: _,
             } => ProblemType::Checklist,

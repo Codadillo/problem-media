@@ -99,6 +99,7 @@ pub struct DbProblem {
     pub p_type: String,
     pub topic: String,
     pub tags: Vec<String>,
+    pub prompt: String,
     pub data: String,
     pub recommendations: i32,
 }
@@ -135,6 +136,7 @@ pub struct NewDbProblem {
     pub p_type: String,
     pub topic: String,
     pub tags: Vec<String>,
+    pub prompt: String,
     pub data: String,
 }
 
@@ -147,6 +149,7 @@ impl NewDbProblem {
             p_type: serde_json::to_string(&problem.content.get_type())?,
             topic: serde_json::to_string(&problem.topic)?,
             tags: problem.tags,
+            prompt: problem.prompt,
             data: serde_json::to_string(&problem.content)?,
         })
     }
