@@ -5,6 +5,7 @@ mod problems;
 
 use actix_session::{CookieSession, Session};
 use actix_web::{http, middleware, web, App, Error, HttpResponse, HttpServer, Responder};
+use actix_cors::Cors;
 use database::models;
 use diesel::{
     pg::PgConnection,
@@ -75,14 +76,13 @@ async fn query_problems(
         return Ok(HttpResponse::BadRequest().finish());
     }
     let conn = pool.get().expect("couldn't get db connection from pool");
-    let problems = web::block(move || -> Result<Vec<i32>, diesel::result::Error> {
-        req.query(&conn)
-    })
-    .await
-    .map_err(|e| {
-        eprintln!("{}", e);
-        HttpResponse::InternalServerError().finish()
-    })?;
+    let problems =
+        web::block(move || -> Result<Vec<i32>, diesel::result::Error> { req.query(&conn) })
+            .await
+            .map_err(|e| {
+                eprintln!("{}", e);
+                HttpResponse::InternalServerError().finish()
+            })?;
     Ok(HttpResponse::Ok()
         .header(http::header::CONTENT_TYPE, "application/json")
         .body(serde_json::to_string(&problems)?))
@@ -151,10 +151,18 @@ async fn main() -> std::io::Result<()> {
                     .path("/")
                     .secure(false),
             )
+            .wrap(
+                Cors::new()
+                    .allowed_origin("http://localhost:8000")
+                    .allowed_methods(vec!["GET", "POST", "OPTIONS"])
+                    .allowed_header(http::header::CONTENT_TYPE)
+                    .finish()
+            )
             .service(web::resource("/api/problem").route(web::get().to(query_problems)))
             .service(web::resource("/api/problem/create").route(web::post().to(create_problem)))
             .service(web::resource("/api/account/login").route(web::post().to(login)))
             .service(web::resource("/api/account/create").route(web::post().to(create_user)))
+            // .service(web::resource("*").route(web::get().to(|| HttpResponse::Ok().body("asdfasdf"))))
     })
     .bind(format!("127.0.0.1:{}", PORT))?
     .run()

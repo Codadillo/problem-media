@@ -10,6 +10,7 @@ edition = "2018"
 actix-session = "0.3.0"
 actix-web = "2.0.0"
 actix-rt = "1.1.0"
+actix-cors = "0.2.0"
 serde = "1.0.106"
 diesel = { version = "1.4.4", features = ["postgres", "r2d2"] }
 env_logger = "0.7.1"
