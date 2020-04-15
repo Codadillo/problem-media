@@ -8,7 +8,11 @@ module.exports = (env, argv) => {
     devServer: {
       contentBase: distPath,
       compress: argv.mode === 'production',
-      port: 8000
+      port: 8000,
+      historyApiFallback: true,
+      headers: {
+        'Access-Control-Allow-Origin': '*'
+      }
     },
     entry: './bootstrap.js',
     output: {

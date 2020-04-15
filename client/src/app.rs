@@ -1,3 +1,4 @@
+use crate::login::LoginComponent;
 use log::*;
 use yew::prelude::*;
 use yew_router::{route::Route, service::RouteService, Switch};
@@ -8,7 +9,7 @@ pub enum AppRoute {
     Login,
 }
 
-pub enum Msg {
+pub enum AppMsg {
     RouteChanged(Route<()>),
     ChangeRoute(AppRoute),
 }
@@ -22,19 +23,19 @@ pub struct App {
 impl App {
     fn change_route(&self, app_route: AppRoute) -> Callback<Event> {
         self.link.callback(move |_| {
-            Msg::ChangeRoute(app_route.clone())
+            AppMsg::ChangeRoute(app_route.clone())
         })
     }
 }
 
 impl Component for App {
-    type Message = Msg;
+    type Message = AppMsg;
     type Properties = ();
 
     fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
         let mut route_service: RouteService<()> = RouteService::new();
         let route = route_service.get_route();
-        let callback = link.callback(Msg::RouteChanged);
+        let callback = link.callback(AppMsg::RouteChanged);
         route_service.register_callback(callback);
 
         App {
@@ -46,8 +47,8 @@ impl Component for App {
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
-            Msg::RouteChanged(route) => self.route = route,
-            Msg::ChangeRoute(route) => {
+            AppMsg::RouteChanged(route) => self.route = route,
+            AppMsg::ChangeRoute(route) => {
                 let route_string = match route {
                     AppRoute::Login => "/login".to_string()
                 };
@@ -64,7 +65,14 @@ impl Component for App {
     fn view(&self) -> Html {
         info!("rendered!");
         html! {
-            <div class="app"></div>
+            <div class="app">
+                {
+                    match AppRoute::switch(self.route.clone()) {
+                        Some(AppRoute::Login) => html! { <LoginComponent></LoginComponent> },
+                        None => html! { <div class="notfound">{"404 lol"}</div> },
+                    }
+                }
+            </div>
         }
     }
 }

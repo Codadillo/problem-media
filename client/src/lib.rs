@@ -3,6 +3,8 @@
 mod app;
 mod utils;
 
+pub mod login;
+
 use wasm_bindgen::prelude::*;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global

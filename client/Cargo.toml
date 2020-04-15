@@ -11,13 +11,17 @@ crate-type = ["cdylib", "rlib"]
 log = "0.4"
 strum = "0.17"
 strum_macros = "0.17"
-serde = "1"
+serde = "1.0.106"
 serde_derive = "1"
-wasm-bindgen = "0.2.58"
 web_logger = "0.2"
 wee_alloc = { version = "0.4.4", optional = true }
 yew = { version = "0.14.0", features = ["web_sys"] }
 yew-router = {version = "0.11.0", features = ["web_sys"] }
+anyhow = "1.0.28"
+serde_json = "1.0.51"
+reqwest = { version = "0.10.4", features = ["json"] }
+wasm-bindgen-futures = "0.4.10"
+wasm-bindgen = "0.2.60"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
@@ -25,5 +29,6 @@ wasm-bindgen-test = "0.3"
 [dependencies.web-sys]
 version = "0.3.4"
 features = [
-  'KeyboardEvent',
+  "KeyboardEvent",
+  "HtmlInputElement"
 ]
