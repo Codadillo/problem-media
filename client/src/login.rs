@@ -1,4 +1,4 @@
-use crate::app::AppRoute;
+use crate::app::{API_URL, AppRoute};
 use log::*;
 use yew::{
     format::{Json, Nothing},
@@ -55,7 +55,7 @@ impl LoginComponent {
             },
         );
         let raw_request = serde_json::to_string(&self.user_request).unwrap();
-        let request = Request::post("http://localhost:8080/api/account/login")
+        let request = Request::post(format!("{}/account/login", API_URL))
             .header("Content-Type", "application/json")
             .body(Json(&self.user_request))
             .unwrap();

@@ -1,9 +1,13 @@
 const path = require('path');
+const webpack = require('webpack');
+
 const WasmPackPlugin = require('@wasm-tool/wasm-pack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 const distPath = path.resolve(__dirname, "dist");
 module.exports = (env, argv) => {
+  process.env.APP_HOST_URL = process.env.APP_HOST_URL || "localhost:8080";
+
   return {
     devServer: {
       contentBase: distPath,

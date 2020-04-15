@@ -3,6 +3,9 @@ use log::*;
 use yew::prelude::*;
 use yew_router::{route::Route, service::RouteService, Switch};
 
+pub const HOST_URL: &'static str = env!("APP_HOST_URL");
+pub const API_URL: &'static str = concat!(env!("APP_HOST_URL"), "/api");
+
 #[derive(Debug, Switch, Clone)]
 pub enum AppRoute {
     #[to = "/login"]
