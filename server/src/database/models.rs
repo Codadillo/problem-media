@@ -139,6 +139,16 @@ pub struct NewDbProblem {
 }
 
 impl NewDbProblem {
+    pub fn from_new_problem(problem: common::problems::NewProblem) -> Result<Self, serde_json::Error> {
+        Ok(Self {
+            owner_id: problem.owner_id,
+            p_type:  serde_json::to_string(&problem.content.get_type())?,
+            topic: serde_json::to_string(&problem.topic)?,
+            tags: problem.tags,
+            data: serde_json::to_string(&problem.content)?,
+        })
+    }
+
     pub fn insert(&self, conn: &PgConnection) -> Result<DbProblem, result::Error> {
         use schema::problems::dsl::*;
         diesel::insert_into(problems).values(self).get_result(conn)

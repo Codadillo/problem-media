@@ -1,11 +1,11 @@
 #[macro_use]
 extern crate diesel;
 mod database;
-mod problems;
 
 use actix_cors::Cors;
 use actix_session::{CookieSession, Session};
 use actix_web::{http, middleware, web, App, Error, HttpResponse, HttpServer, Responder};
+use common::problems;
 use database::models;
 use diesel::{
     pg::PgConnection,
@@ -50,9 +50,7 @@ async fn create_problem(
         return Ok(HttpResponse::BadRequest().finish());
     }
     let conn = pool.get().expect("couldn't get db connection from pool");
-    let new_db_problem = req
-        .into_inner()
-        .into_new_db_problem()
+    let new_db_problem = models::NewDbProblem::from_new_problem(req.into_inner())
         .map_err(|_| HttpResponse::BadRequest().finish())?;
     let new_problem = web::block(
         move || -> Result<models::DbProblem, diesel::result::Error> {

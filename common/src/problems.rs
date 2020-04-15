@@ -1,4 +1,3 @@
-use crate::database::models::NewDbProblem;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -16,18 +15,6 @@ pub struct NewProblem {
     pub topic: Topic,
     pub tags: Vec<String>,
     pub content: ProblemContent,
-}
-
-impl NewProblem {
-    pub fn into_new_db_problem(self) -> Result<NewDbProblem, serde_json::Error> {
-        Ok(NewDbProblem {
-            owner_id: self.owner_id,
-            p_type: serde_json::to_string(&self.content.get_type())?,
-            topic: serde_json::to_string(&self.topic)?,
-            tags: self.tags,
-            data: serde_json::to_string(&self.content)?,
-        })
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
