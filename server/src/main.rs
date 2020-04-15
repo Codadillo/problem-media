@@ -132,7 +132,9 @@ async fn recommend_problem(
         } else {
             Ok(Some("Could not find session user"))
         }
-    }).await.map_err(|e| {
+    })
+    .await
+    .map_err(|e| {
         eprintln!("{}", e);
         HttpResponse::InternalServerError().finish()
     })?;
@@ -241,7 +243,10 @@ async fn main() -> std::io::Result<()> {
             .service(web::resource("/api/problem").route(web::get().to(query_problems)))
             .service(web::resource("/api/problem/create").route(web::post().to(create_problem)))
             .service(web::resource("/api/problem/{id}").route(web::get().to(get_problem)))
-            .service(web::resource("/api/problem/{id}/recommend/{undo}").route(web::get().to(recommend_problem)))
+            .service(
+                web::resource("/api/problem/{id}/recommend/{undo}")
+                    .route(web::get().to(recommend_problem)),
+            )
             .service(web::resource("/api/account/login").route(web::post().to(login)))
             .service(web::resource("/api/account/create").route(web::post().to(create_user)))
         // .service(web::resource("*").route(web::get().to(|| HttpResponse::Ok().body("404 page"))))
