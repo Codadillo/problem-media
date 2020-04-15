@@ -3,9 +3,9 @@ extern crate diesel;
 mod database;
 mod problems;
 
+use actix_cors::Cors;
 use actix_session::{CookieSession, Session};
 use actix_web::{http, middleware, web, App, Error, HttpResponse, HttpServer, Responder};
-use actix_cors::Cors;
 use database::models;
 use diesel::{
     pg::PgConnection,
@@ -108,12 +108,12 @@ async fn create_user(
         eprintln!("{}", e);
         HttpResponse::InternalServerError().finish()
     })?;
-    if let Some(new_user) = new_user {
+    Ok(if let Some(new_user) = new_user {
         session.set("user", new_user)?;
-        Ok(HttpResponse::Ok())
+        HttpResponse::Ok()
     } else {
-        Ok(HttpResponse::BadRequest())
-    }
+        HttpResponse::NotAcceptable()
+    })
 }
 
 async fn login(
@@ -121,11 +121,16 @@ async fn login(
     pool: web::Data<DbPool>,
     req: web::Json<models::NewUser>,
 ) -> Result<impl Responder, Error> {
-    session.set("user", req.into_inner())?;
-    Ok(if validate(&session, pool).await? {
+    let conn = pool.get().expect("couldn't get db connection from pool");
+    let user = web::block(move || req.get(&conn)).await.map_err(|e| {
+        eprintln!("{}", e);
+        HttpResponse::InternalServerError()
+    })?;
+    Ok(if let Some(user) = user {
+        session.set("user", user)?;
         HttpResponse::Ok()
     } else {
-        HttpResponse::BadRequest()
+        HttpResponse::NotAcceptable()
     })
 }
 
@@ -156,13 +161,13 @@ async fn main() -> std::io::Result<()> {
                     .allowed_origin("http://localhost:8000")
                     .allowed_methods(vec!["GET", "POST", "OPTIONS"])
                     .allowed_header(http::header::CONTENT_TYPE)
-                    .finish()
+                    .finish(),
             )
             .service(web::resource("/api/problem").route(web::get().to(query_problems)))
             .service(web::resource("/api/problem/create").route(web::post().to(create_problem)))
             .service(web::resource("/api/account/login").route(web::post().to(login)))
             .service(web::resource("/api/account/create").route(web::post().to(create_user)))
-            // .service(web::resource("*").route(web::get().to(|| HttpResponse::Ok().body("asdfasdf"))))
+        // .service(web::resource("*").route(web::get().to(|| HttpResponse::Ok().body("404 page"))))
     })
     .bind(format!("127.0.0.1:{}", PORT))?
     .run()
