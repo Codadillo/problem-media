@@ -1,7 +1,7 @@
 use super::schema::{self, *};
-use crate::problems::{Problem, Topic, ProblemType};
-use serde::{Deserialize, Serialize};
+use crate::problems::{Problem, ProblemType, Topic};
 use diesel::{prelude::*, result};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Queryable)]
 pub struct User {
@@ -37,9 +37,7 @@ impl NewUser {
 
     pub fn insert(&self, conn: &PgConnection) -> Result<User, result::Error> {
         use schema::users::dsl::*;
-        diesel::insert_into(users)
-            .values(self)
-            .get_result(conn)
+        diesel::insert_into(users).values(self).get_result(conn)
     }
 }
 
@@ -72,8 +70,6 @@ impl DbProblem {
             content: serde_json::from_str(&self.data)?,
         })
     }
-
-
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Insertable)]
@@ -87,14 +83,9 @@ pub struct NewDbProblem {
 }
 
 impl NewDbProblem {
-    pub fn insert(
-        &self,
-        conn: &PgConnection,
-    ) -> Result<DbProblem, result::Error> {
+    pub fn insert(&self, conn: &PgConnection) -> Result<DbProblem, result::Error> {
         use schema::problems::dsl::*;
-        diesel::insert_into(problems)
-            .values(self)
-            .get_result(conn)
+        diesel::insert_into(problems).values(self).get_result(conn)
     }
 }
 
@@ -115,10 +106,7 @@ pub struct ProblemQuery {
 }
 
 impl ProblemQuery {
-    pub fn query(
-        &self,
-        conn: &PgConnection,
-    ) -> Result<Vec<i32>, result::Error> {
+    pub fn query(&self, conn: &PgConnection) -> Result<Vec<i32>, result::Error> {
         use schema::problems::dsl::*;
         let mut query = problems.select(id).into_boxed();
         if let Some(p_id) = self.id {
