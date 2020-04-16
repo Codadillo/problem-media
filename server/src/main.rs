@@ -7,11 +7,12 @@ extern crate lazy_static;
 mod api;
 mod database;
 
-use std::env;
+use std::{env, path::PathBuf};
 
 use actix_cors::Cors;
+use actix_files::{Files, NamedFile};
 use actix_session::{CookieSession, Session};
-use actix_web::{http, middleware, web, App, Error, HttpResponse, HttpServer};
+use actix_web::{http, middleware, web, App, Error, HttpRequest, HttpResponse, HttpServer, Result};
 use database::models;
 use diesel::{
     pg::PgConnection,
@@ -35,6 +36,9 @@ fn get_env_with_dev_default(key: &'static str, default: &'static str) -> String 
 }
 
 lazy_static! {
+    static ref FRONTEND_PATH: PathBuf = env::var("FRONTEND_PATH")
+        .unwrap_or("../client/dist".to_string())
+        .into();
     static ref APP_HOST: String = get_env_with_dev_default("APP_HOST", "localhost");
     static ref APP_PORT: String = get_env_with_dev_default("APP_PORT", "8080");
     static ref DB_HOST: String = get_env_with_dev_default("DB_HOST_URL", "localhost");
@@ -71,6 +75,10 @@ pub async fn validate(session: &Session, pool: web::Data<DbPool>) -> Result<bool
     }
 }
 
+async fn index(_: HttpRequest) -> Result<NamedFile> {
+    Ok(NamedFile::open(FRONTEND_PATH.join("index.html"))?)
+}
+
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     // Setup DB stuff
@@ -104,7 +112,9 @@ async fn main() -> std::io::Result<()> {
             )
             .service(web::scope("/api").configure(api::config))
             .service(
-                web::resource("*").route(web::get().to(|| HttpResponse::Ok().body("404 page"))),
+                Files::new("", FRONTEND_PATH.clone())
+                    .index_file("index.html")
+                    .default_handler(web::get().to(index)),
             )
     })
     .bind(APP_ADDR.clone())?
