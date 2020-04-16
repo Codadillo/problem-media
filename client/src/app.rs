@@ -1,4 +1,4 @@
-use crate::login::LoginComponent;
+use crate::{problem::feed::FeedComponent, login::LoginComponent};
 use log::*;
 use yew::prelude::*;
 use yew_router::{route::Route, service::RouteService, Switch};
@@ -8,6 +8,8 @@ pub const API_URL: &'static str = concat!(env!("APP_HOST_URL"), "/api");
 
 #[derive(Debug, Switch, Clone)]
 pub enum AppRoute {
+    #[to = "/feed"]
+    Feed { endpoint: String },
     #[to = "/login"]
     Login,
 }
@@ -53,6 +55,7 @@ impl Component for App {
             AppMsg::ChangeRoute(route) => {
                 let route_string = match route {
                     AppRoute::Login => "/login".to_string(),
+                    AppRoute::Feed { endpoint } => "/feed".to_string(),
                 };
                 self.route_service.set_route(&route_string, ());
                 self.route = Route {
@@ -74,6 +77,7 @@ impl Component for App {
                 {
                     match AppRoute::switch(self.route.clone()) {
                         Some(AppRoute::Login) => html! { <LoginComponent></LoginComponent> },
+                        Some(AppRoute::Feed { endpoint }) => html! { <FeedComponent feed_endpoint=format!("{}/problems?", API_URL)></FeedComponent> },
                         None => html! { <div class="notfound">{"404 lol"}</div> },
                     }
                 }

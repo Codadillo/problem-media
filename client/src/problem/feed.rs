@@ -25,19 +25,19 @@ pub struct FeedComponent {
     link: ComponentLink<Self>,
     fetch_service: FetchService,
     props: FeedProps,
-    problems: Vec<Problem>,
+    problems: Vec<i32>,
 }
 
 impl FeedComponent {
     fn send_request(&mut self) -> FetchTask {
-        let callback = self.link.callback(move |response: Response<Json<Result<Vec<i32>>, anyhow::Error>>| {
+        let callback = self.link.callback(move |response: Response<Json<Result<Vec<i32>, anyhow::Error>>>| {
             let (meta, Json(problem_ids)) = response.into_parts();
             match problem_ids {
                 Ok(problem_ids) => FeedMsg::LoadedProblems(problem_ids),
-                Err(error) => unimplemented!(format!("No error handling if feed request to /problems fails {:?}", error)),
+                Err(error) => unimplemented!("No error handling if feed request to /problems fails"),
             }
         });
-        let request = Request::get(self.feed_endpoint)
+        let request = Request::get(&self.props.feed_endpoint)
             .body(Nothing)
             .unwrap();
         self.fetch_service.fetch(request, callback).unwrap()
@@ -75,7 +75,7 @@ impl Component for FeedComponent {
                     if self.problems.is_empty() { // TODO: loading gif
                         html! {
                             <div class="loading">
-                                Feed loading
+                                { "Loading feed" }
                             </div>
                         }
                     } else {
