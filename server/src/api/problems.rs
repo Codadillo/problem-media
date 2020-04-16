@@ -7,10 +7,13 @@ use crate::{database::models, validate, DbPool};
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/")
-            .route("/q", web::get().to(index))
-            .route("/create", web::post().to(create))
-            .route("/{id}", web::get().to(get))
-            .route("/{id}/recommend", web::post().to(recommend))
+            .route("", web::get().to(index))
+            .route("", web::post().to(create))
+            .service(
+                web::scope("{id}")
+                    .route("/", web::get().to(get))
+                    .route("/recommend", web::post().to(recommend)),
+            ),
     );
 }
 
