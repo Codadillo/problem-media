@@ -1,8 +1,13 @@
 #[macro_use]
 extern crate diesel;
 
+#[macro_use]
+extern crate lazy_static;
+
 mod api;
 mod database;
+
+use std::env;
 
 use actix_cors::Cors;
 use actix_session::{CookieSession, Session};
@@ -14,9 +19,30 @@ use diesel::{
 };
 use env_logger::Env;
 
-const PORT: i32 = 8080;
-const POSTGRES_CON: &'static str =
-    "host=localhost port=5432 user=postgres password=postgres dbname=akshardb";
+fn get_env_with_dev_default(key: &'static str, default: &'static str) -> String {
+    env::var(key)
+        .map_err(|_| {
+            if cfg!(debug_assertions) {
+                Some(default)
+            } else {
+                None
+            }
+        })
+        .expect(format!("Expected {} to be set", key).as_str())
+}
+
+lazy_static! {
+    static ref APP_HOST: String = get_env_with_dev_default("APP_HOST", "localhost");
+    static ref APP_PORT: String = get_env_with_dev_default("APP_PORT", "8080");
+    static ref DB_HOST: String = get_env_with_dev_default("DB_HOST_URL", "localhost");
+    static ref DB_PORT: String = get_env_with_dev_default("DB_PORT", "5432");
+    static ref DB_USER: String = get_env_with_dev_default("DB_USER", "postgres");
+    static ref DB_PASSWORD: String = get_env_with_dev_default("DB_PASSWORD", "postgres");
+    static ref DB_NAME: String = get_env_with_dev_default("DB_NAME", "akshardb");
+
+    static ref APP_ADDR: String = format!("{}:{}", *APP_HOST, *APP_PORT);
+    static ref DB_URL: String = format!("host={} port={} user={} password={} dbname={}", *DB_HOST, *DB_PORT, *DB_USER, *DB_PASSWORD, *DB_NAME);
+}
 
 type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
@@ -43,7 +69,7 @@ pub async fn validate(session: &Session, pool: web::Data<DbPool>) -> Result<bool
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     // Setup DB stuff
-    let manager = ConnectionManager::<PgConnection>::new(POSTGRES_CON);
+    let manager = ConnectionManager::<PgConnection>::new(DB_URL.as_str());
     let pool = r2d2::Pool::builder()
         .build(manager)
         .expect("Failed to create pool");
@@ -59,10 +85,12 @@ async fn main() -> std::io::Result<()> {
             .wrap(
                 CookieSession::signed(&[0; 32])
                     .name("actix-session")
+                    .domain(APP_HOST.to_string())
                     .path("/")
                     .secure(false),
             )
             .wrap(
+                // TODO: Use separate CORS headers for debug/release
                 Cors::new()
                     .allowed_origin("http://localhost:8000")
                     .allowed_methods(vec!["GET", "POST", "OPTIONS"])
@@ -74,7 +102,7 @@ async fn main() -> std::io::Result<()> {
                 web::resource("*").route(web::get().to(|| HttpResponse::Ok().body("404 page"))),
             )
     })
-    .bind(format!("127.0.0.1:{}", PORT))?
+    .bind(APP_ADDR.clone())?
     .run()
     .await
 }
