@@ -9,7 +9,6 @@ use yew::{
         FetchService,
     },
 };
-use yew_router::{route::Route, service::RouteService, Switch};
 
 pub enum FreeRespMsg {
     InputChanged(String),
