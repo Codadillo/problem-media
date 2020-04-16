@@ -59,13 +59,16 @@ impl Component for MultChoiceComponent {
             <div class="multiplechoice">
                 {
                     for self.props.options.iter().enumerate().map(|(i, option)| html! {
-                        <div onclick=self.select_choice(i) class={
-                            if Some(i) == self.choice {
-                                "option selected"
-                            } else {
-                                "option"
-                            }
-                        }>{option}</div>
+                        <div class="optionwrapper">
+                            <span class="optionmarker">{ ">" }</span>
+                            <div onclick=self.select_choice(i) class={
+                                if Some(i) == self.choice {
+                                    "option selected"
+                                } else {
+                                    "option"
+                                }
+                            }>{option}</div>
+                        </div>
                     })
                 }
             </div>

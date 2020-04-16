@@ -95,15 +95,16 @@ impl Component for ProblemComponent {
                 <div class="problem loaded">
                     <div class="header">
                         <div class="topic">
-                            { serde_json::to_string(&problem.topic).unwrap() }
+                            { serde_json::to_string(&problem.topic).unwrap().replace(r#"""#, "") }
                         </div>
                         <div class="tags">
                             { for problem.tags.iter().map(|tag| html! { <div class="tag">{tag}</div> }) }
                         </div>
-                        <div class="prompt">
+                    </div>
+
+                    <div class="prompt">
                             { &problem.prompt }
                         </div>
-                    </div>
 
                     <div class="content">
                         {
@@ -128,8 +129,11 @@ impl Component for ProblemComponent {
                     </div>
 
                     <div class="footer">
-                        <div class="recommend">
-                            { problem.recommendations } { "recommendations" }
+                        <div class="reccount">
+                            { problem.recommendations } { " recs" }
+                        </div>
+                        <div class="rec">
+                            { "Recommend!" }
                         </div>
                     </div>
                 </div>
