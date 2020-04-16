@@ -103,40 +103,43 @@ async fn recommend(
         return Ok(HttpResponse::BadRequest().body("Invalid session"));
     }
     let user: models::NewUser = user.unwrap().into();
-    let resp = web::block(move || -> Result<Option<&str>, diesel::result::Error> {
-        let user = user.get(&conn)?;
-        if let Some(mut user) = user {
-            if user.recommended_ids.contains(&id) == !undo {
-                return Ok(Some("Attempt to recommend already recommended problem"));
-            }
-            let problem = models::DbProblem::get_by_id(id, &conn)?;
-            if let Some(mut problem) = problem {
-                if undo {
-                    let id_index = user.recommended_ids.binary_search(&id).unwrap();
-                    user.recommended_ids.remove(id_index);
-                    problem.recommendations -= 1;
-                } else {
-                    user.recommended_ids.push(id);
-                    problem.recommendations += 1;
+    let resp = web::block(
+        move || -> Result<Result<i32, &str>, diesel::result::Error> {
+            let user = user.get(&conn)?;
+            if let Some(mut user) = user {
+                if user.recommended_ids.contains(&id) == !undo {
+                    return Ok(Err("Attempt to recommend already recommended problem"));
                 }
-                user.update_recommendations(&conn)?;
-                problem.update_recommendations(&conn)?;
-                Ok(None)
+                let problem = models::DbProblem::get_by_id(id, &conn)?;
+                if let Some(mut problem) = problem {
+                    if undo {
+                        let id_index = user.recommended_ids.binary_search(&id).unwrap();
+                        user.recommended_ids.remove(id_index);
+                        problem.recommendations -= 1;
+                    } else {
+                        user.recommended_ids.push(id);
+                        problem.recommendations += 1;
+                    }
+                    user.update_recommendations(&conn)?;
+                    problem.update_recommendations(&conn)?;
+                    Ok(Ok(problem.recommendations))
+                } else {
+                    Ok(Err("Could not find requested problem"))
+                }
             } else {
-                Ok(Some("Could not find requested problem"))
+                Ok(Err("Could not find session user"))
             }
-        } else {
-            Ok(Some("Could not find session user"))
-        }
-    })
+        },
+    )
     .await
     .map_err(|e| {
         eprintln!("{}", e);
         HttpResponse::InternalServerError().finish()
     })?;
-    if let Some(error) = resp {
-        Ok(HttpResponse::NotFound().body(error))
-    } else {
-        Ok(HttpResponse::Ok().finish())
-    }
+    Ok(match resp {
+        Ok(rec_count) => HttpResponse::Ok()
+            .header(http::header::CONTENT_TYPE, "application/json")
+            .body(rec_count.to_string()),
+        Err(error) => HttpResponse::NotFound().body(error),
+    })
 }
