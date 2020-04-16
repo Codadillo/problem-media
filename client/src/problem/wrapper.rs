@@ -6,7 +6,6 @@ use crate::{
 }};
 use common::problems::{Problem, ProblemContent};
 use log::*;
-use serde::{Deserialize, Serialize};
 use yew::{
     format::{Json, Nothing},
     prelude::*,
@@ -54,7 +53,7 @@ impl ProblemComponent {
                 } else {
                     ProblemStatus::Failed(format!("{}", meta.status))
                 },
-                Err(error) => ProblemStatus::Failed(format!("{}", error))
+                Err(error) => ProblemStatus::Failed(format!("ERROR: {}", error))
             })
         });
         let request = Request::get(format!("{}/problems/{}/", API_URL, self.props.problemid))
@@ -76,7 +75,7 @@ impl Component for ProblemComponent {
             problem: ProblemStatus::Loading,
             props,
         };
-        component.send_request();
+        component.ft = Some(component.send_request());
         component
     }
 

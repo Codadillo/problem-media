@@ -1,6 +1,5 @@
 use common::problems;
 use log::*;
-use serde::{Deserialize, Serialize};
 use yew::{
     format::{Json, Nothing},
     prelude::*,

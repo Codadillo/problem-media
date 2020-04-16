@@ -1,7 +1,6 @@
 use crate::problem::wrapper::ProblemComponent;
 use common::problems::{Problem, ProblemContent};
 use log::*;
-use serde::{Deserialize, Serialize};
 use yew::{
     format::{Json, Nothing},
     prelude::*,
@@ -24,6 +23,7 @@ pub enum FeedMsg {
 pub struct FeedComponent {
     link: ComponentLink<Self>,
     fetch_service: FetchService,
+    ft: Option<FetchTask>,
     props: FeedProps,
     problems: Vec<i32>,
 }
@@ -53,9 +53,10 @@ impl Component for FeedComponent {
             link,
             props,
             fetch_service: FetchService::new(),
+            ft: None,
             problems: vec![],
         };
-        component.send_request();
+        component.ft = Some(component.send_request());
         component
     }
 

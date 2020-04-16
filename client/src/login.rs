@@ -9,7 +9,7 @@ use yew::{
         FetchService,
     },
 };
-use yew_router::{route::Route, service::RouteService, Switch};
+use yew_router::{agent::RouteRequest, prelude::*};
 
 #[derive(Debug, Serialize)]
 pub struct UserRequest {
@@ -33,6 +33,7 @@ pub struct LoginComponent {
     ft: Option<FetchTask>,
     user_request: UserRequest,
     error_message: String,
+    router: Box<dyn Bridge<RouteAgent>>,
 }
 
 impl LoginComponent {
@@ -55,7 +56,6 @@ impl LoginComponent {
                 LoginMsg::Failure(format!("{}", meta.status))
             }
         });
-        let raw_request = serde_json::to_string(&self.user_request).unwrap();
         let request = Request::post(format!("{}/account/login", API_URL))
             .header("Content-Type", "application/json")
             .body(Json(&self.user_request))
@@ -69,6 +69,9 @@ impl Component for LoginComponent {
     type Properties = ();
 
     fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
+        let callback = link.callback(|_| LoginMsg::NoOp);
+        let router = RouteAgent::bridge(callback);
+
         Self {
             link,
             user_request: UserRequest {
@@ -78,6 +81,7 @@ impl Component for LoginComponent {
             fetch_service: FetchService::new(),
             ft: None,
             error_message: String::new(),
+            router,
         }
     }
 
@@ -99,8 +103,12 @@ impl Component for LoginComponent {
                 self.error_message = error;
                 true
             }
+            LoginMsg::Success => {
+                self.router
+                    .send(RouteRequest::ChangeRoute(Route::from("/feed".to_string())));
+                false
+            }
             LoginMsg::NoOp => false,
-            _ => unimplemented!("SUCCESS NOT HANDLED IN UPDATE"),
         }
     }
 
