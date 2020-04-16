@@ -12,7 +12,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .service(
                 web::scope("{id}")
                     .route("/", web::get().to(get))
-                    .route("/recommend", web::post().to(recommend)),
+                    .route("/recommend/{undo}", web::get().to(recommend)),
             ),
     );
 }
@@ -77,10 +77,10 @@ async fn get(
             HttpResponse::InternalServerError().finish()
         })?;
     Ok(if let Some(db_problem) = db_problem {
-        let problem = db_problem.into_problem();
+        let problem: problems::Problem = db_problem.into_problem()?;
         HttpResponse::Ok()
             .header(http::header::CONTENT_TYPE, "application/json")
-            .body(serde_json::to_string(&problem?).unwrap())
+            .body(serde_json::to_string(&problem).unwrap())
     } else {
         HttpResponse::NotFound().finish()
     })
@@ -107,7 +107,7 @@ async fn recommend(
         let user = user.get(&conn)?;
         if let Some(mut user) = user {
             if user.recommended_ids.contains(&id) == !undo {
-                return Ok(Some("Attempt to recommend already problem"));
+                return Ok(Some("Attempt to recommend already recommended problem"));
             }
             let problem = models::DbProblem::get_by_id(id, &conn)?;
             if let Some(mut problem) = problem {
