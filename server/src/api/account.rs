@@ -1,5 +1,6 @@
+use crate::validate;
 use actix_session::Session;
-use actix_web::{web, Error, HttpResponse, Responder};
+use actix_web::{web, http, Error, HttpResponse, Responder};
 use diesel::prelude::*;
 
 use crate::{database::models, DbPool};
@@ -8,8 +9,35 @@ pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/")
             .route("/create", web::get().to(create))
-            .route("/login", web::post().to(login)),
+            .route("/login", web::post().to(login))
+            .route("/{id}", web::get().to(get)),
     );
+}
+
+async fn get(
+    session: Session,
+    pool: web::Data<DbPool>,
+    req: web::Path<i32>,
+) -> Result<impl Responder, Error> {
+    if !validate(&session, pool.clone()).await? {
+        return Ok(HttpResponse::BadRequest().finish());
+    }
+    let id = req.into_inner();
+    let conn = pool.get().expect("couldn't get db connection from pool");
+    let resp = web::block(move || models::User::get_by_id(id, &conn))
+        .await
+        .map_err(|e| {
+            eprintln!("{}", e);
+            HttpResponse::InternalServerError().finish()
+        })?;
+    Ok(if let Some(user) = resp {
+        HttpResponse::Ok()
+            .header(http::header::CONTENT_TYPE, "application/json")
+            .body(serde_json::to_string(&user)?)
+    } else {
+        HttpResponse::NotFound()
+            .body("Could not find user")
+    })
 }
 
 async fn create(
