@@ -57,13 +57,16 @@ impl Component for ChecklistComponent {
             <div class="checklist">
                 {
                     for self.props.options.iter().enumerate().map(|(i, option)| html! {
-                        <div onclick=self.select_choice(i) class={
-                            if self.choices[i] {
-                                "option selected"
-                            } else {
-                                "option"
-                            }
-                        }>{option}</div>
+                        <div class="optionwrapper">
+                            <span class="optionmarker">{ ">" }</span>
+                            <div onclick=self.select_choice(i) class={
+                                if self.choices[i] {
+                                    "option selected"
+                                } else {
+                                    "option"
+                                }
+                            }>{option}</div>
+                        </div>
                     })
                 }
             </div>

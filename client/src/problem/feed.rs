@@ -81,12 +81,14 @@ impl Component for FeedComponent {
                         }
                     } else {
                         html! {
-                            <div class="problems">
-                                {
-                                    for self.problems.iter().map(|problem_id| html! {
-                                        <ProblemComponent problemid={ problem_id } />
-                                    })
-                                }
+                            <div class="problemswrapper">
+                                <div class="problems">
+                                    {
+                                        for self.problems.iter().map(|problem_id| html! {
+                                            <ProblemComponent problemid={ problem_id } />
+                                        })
+                                    }
+                                </div>
                             </div>
                         }
                     }

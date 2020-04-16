@@ -66,10 +66,12 @@ impl Component for FreeRespComponent {
     fn view(&self) -> Html {
         html! {
             <div class="freeresponse">
+                <div class="textareacontainer">
+                    <textarea oninput=self.input_changed()></textarea>
+                </div>
                 <div class="errorbox">
                     { &self.error_message }
                 </div>
-                <textarea oninput=self.input_changed()></textarea>
             </div>
         }
     }
