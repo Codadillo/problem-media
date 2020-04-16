@@ -21,13 +21,16 @@ use env_logger::Env;
 
 fn get_env_with_dev_default(key: &'static str, default: &'static str) -> String {
     env::var(key)
-        .map_err(|_| {
-            if cfg!(debug_assertions) {
-                Some(default)
-            } else {
-                None
-            }
-        })
+        .map_or_else(
+            |_| {
+                if cfg!(debug_assertions) {
+                    Some(default.to_string())
+                } else {
+                    None
+                }
+            },
+            Option::Some,
+        )
         .expect(format!("Expected {} to be set", key).as_str())
 }
 
@@ -39,9 +42,11 @@ lazy_static! {
     static ref DB_USER: String = get_env_with_dev_default("DB_USER", "postgres");
     static ref DB_PASSWORD: String = get_env_with_dev_default("DB_PASSWORD", "postgres");
     static ref DB_NAME: String = get_env_with_dev_default("DB_NAME", "akshardb");
-
     static ref APP_ADDR: String = format!("{}:{}", *APP_HOST, *APP_PORT);
-    static ref DB_URL: String = format!("host={} port={} user={} password={} dbname={}", *DB_HOST, *DB_PORT, *DB_USER, *DB_PASSWORD, *DB_NAME);
+    static ref DB_URL: String = format!(
+        "host={} port={} user={} password={} dbname={}",
+        *DB_HOST, *DB_PORT, *DB_USER, *DB_PASSWORD, *DB_NAME
+    );
 }
 
 type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
