@@ -70,16 +70,17 @@ async fn get(
         return Ok(HttpResponse::BadRequest().finish());
     }
     let conn = pool.get().expect("couldn't get db connection from pool");
-    let problem = web::block(move || models::DbProblem::get_by_id(id.into_inner(), &conn))
+    let db_problem = web::block(move || models::DbProblem::get_by_id(id.into_inner(), &conn))
         .await
         .map_err(|e| {
             eprintln!("{}", e);
             HttpResponse::InternalServerError().finish()
         })?;
-    Ok(if let Some(problem) = problem {
+    Ok(if let Some(db_problem) = db_problem {
+        let problem = db_problem.into_problem();
         HttpResponse::Ok()
             .header(http::header::CONTENT_TYPE, "application/json")
-            .body(serde_json::to_string(&problem).unwrap())
+            .body(serde_json::to_string(&problem?).unwrap())
     } else {
         HttpResponse::NotFound().finish()
     })
