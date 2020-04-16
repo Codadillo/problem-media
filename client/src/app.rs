@@ -24,10 +24,9 @@ pub struct App {
 }
 
 impl App {
-    fn change_route(&self, app_route: AppRoute) -> Callback<Event> {
-        self.link.callback(move |_| {
-            AppMsg::ChangeRoute(app_route.clone())
-        })
+    fn change_route(&self, app_route: AppRoute) -> Callback<MouseEvent> {
+        self.link
+            .callback(move |_| AppMsg::ChangeRoute(app_route.clone()))
     }
 }
 
@@ -53,7 +52,7 @@ impl Component for App {
             AppMsg::RouteChanged(route) => self.route = route,
             AppMsg::ChangeRoute(route) => {
                 let route_string = match route {
-                    AppRoute::Login => "/login".to_string()
+                    AppRoute::Login => "/login".to_string(),
                 };
                 self.route_service.set_route(&route_string, ());
                 self.route = Route {
@@ -69,6 +68,9 @@ impl Component for App {
         info!("rendered!");
         html! {
             <div class="app">
+                <nav class="menu">
+                    <button onclick=&self.change_route(AppRoute::Login)>{"Log In"}</button>
+                </nav>
                 {
                     match AppRoute::switch(self.route.clone()) {
                         Some(AppRoute::Login) => html! { <LoginComponent></LoginComponent> },

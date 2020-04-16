@@ -1,12 +1,15 @@
-use crate::app::{API_URL, AppRoute};
+use crate::app::{AppRoute, API_URL};
 use log::*;
+use serde::{Deserialize, Serialize};
 use yew::{
     format::{Json, Nothing},
     prelude::*,
-    services::{FetchService, fetch::{FetchTask, Request, Response},},
+    services::{
+        fetch::{FetchTask, Request, Response},
+        FetchService,
+    },
 };
 use yew_router::{route::Route, service::RouteService, Switch};
-use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize)]
 pub struct UserRequest {
@@ -44,16 +47,14 @@ impl LoginComponent {
     }
 
     fn send_request(&mut self) -> FetchTask {
-        let callback = self.link.callback(
-            move |response: Response<Nothing>| {
-                let (meta, _) = response.into_parts();
-                if meta.status.is_success() {
-                    LoginMsg::Success
-                } else {
-                    LoginMsg::Failure(format!("{}", meta.status))
-                }
-            },
-        );
+        let callback = self.link.callback(move |response: Response<Nothing>| {
+            let (meta, _) = response.into_parts();
+            if meta.status.is_success() {
+                LoginMsg::Success
+            } else {
+                LoginMsg::Failure(format!("{}", meta.status))
+            }
+        });
         let raw_request = serde_json::to_string(&self.user_request).unwrap();
         let request = Request::post(format!("{}/account/login", API_URL))
             .header("Content-Type", "application/json")

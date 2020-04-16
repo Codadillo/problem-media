@@ -4,6 +4,7 @@ mod app;
 mod utils;
 
 pub mod login;
+pub mod problem;
 
 use wasm_bindgen::prelude::*;
 
