@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 pub struct Problem {
     pub id: i32,
     pub owner_id: i32,
+    pub recommendations: i32,
     pub topic: Topic,
     pub tags: Vec<String>,
     pub prompt: String,

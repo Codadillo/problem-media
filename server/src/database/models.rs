@@ -122,6 +122,8 @@ impl DbProblem {
         Ok(Problem {
             id: self.id,
             owner_id: self.owner_id,
+            prompt: self.prompt,
+            recommendations: self.recommendations,
             topic: serde_json::from_str(&self.topic)?,
             tags: self.tags,
             content: serde_json::from_str(&self.data)?,
