@@ -87,36 +87,50 @@ pub enum FreeResponseRestriction {
 
 impl FreeResponseRestriction {
     /// Checks if a given input passes the restriction.
-    /// returns true if the response is valid.
-    pub fn check(&self, response: String) -> bool {
+    /// returns Ok if the response is valid and if it is not
+    /// it returns a user-displayable error message.
+    pub fn check(&self, response: String) -> Result<(), String> {
         match self {
             FreeResponseRestriction::Imaginary => {
                 unimplemented!("Imaginary numbers not yet supported as a solution")
             }
-            FreeResponseRestriction::Integer => response.parse::<i32>().is_ok(),
-            FreeResponseRestriction::Natural => response.parse::<u32>().is_ok(),
-            FreeResponseRestriction::MaxCharacterLength(length) => response.len() < *length,
+            FreeResponseRestriction::Integer => if response.parse::<i32>().is_ok() {
+                Ok(())
+            } else {
+                Err("Input must a valid integer".to_string())
+            },
+            FreeResponseRestriction::Natural => if response.parse::<u32>().is_ok() {
+                Ok(())
+            } else {
+                Err("Input must a natural number".to_string())
+            },
+            FreeResponseRestriction::MaxCharacterLength(length) => if response.len() < *length {
+                Ok(())
+            } else {
+                Err(format!("Input must be {} characters or less", length))
+            },
             FreeResponseRestriction::RealInRange { start, end } => match response.parse::<f64>() {
                 Ok(num) => {
                     if let Some(start) = start {
                         if num < *start {
-                            return false;
+                            return Err(format!("Input must be greater than {}", start));
                         }
                     }
                     if let Some(end) = end {
                         if num > *end {
-                            return false;
+                            return Err(format!("Input must be less than {}", end));
                         }
                     }
-                    true
+                    Ok(())
                 }
-                Err(_) => false,
+                Err(_) => Err("Input must be a real number".to_string()),
             },
             FreeResponseRestriction::ImaginaryInRange { start: _, end: _ } => {
                 unimplemented!("Imaginary numbers not yet supported as a solution")
             }
         }
     }
+
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
