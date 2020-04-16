@@ -85,7 +85,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(
                 CookieSession::signed(&[0; 32])
                     .name("actix-session")
-                    .domain(APP_HOST.to_string())
+                    .domain(APP_HOST.clone())
                     .path("/")
                     .secure(false),
             )
