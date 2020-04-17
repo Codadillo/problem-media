@@ -8,6 +8,7 @@ use crate::{
 use common::problems::{Problem, ProblemContent};
 use log::*;
 use yew::{
+    virtual_dom::{VNode, VText},
     format::{Json, Nothing},
     prelude::*,
     services::{
@@ -20,6 +21,11 @@ pub enum ProblemStatus {
     Loading,
     Loaded(Problem),
     Failed(String),
+}
+
+pub enum PromptPart {
+    Text(String),
+    Latex(String),
 }
 
 pub enum ProblemMsg {
@@ -42,6 +48,7 @@ pub struct ProblemComponent {
     rec_ft: Option<FetchTask>,
     props: ProblemProps,
     problem: ProblemStatus,
+    problem_prompt: Vec<PromptPart>,
 }
 
 impl ProblemComponent {
@@ -108,6 +115,7 @@ impl Component for ProblemComponent {
             problem_ft: None,
             rec_ft: None,
             problem: ProblemStatus::Loading,
+            problem_prompt: vec![],
             props,
         };
         component.problem_ft = Some(component.send_problem_request());
@@ -117,6 +125,21 @@ impl Component for ProblemComponent {
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
             ProblemMsg::StatusUpdate(status) => {
+                match &status {
+                    ProblemStatus::Loaded(problem) => {
+                        self.problem_prompt = vec![];
+                        for (i, part) in problem.prompt.split("$$").enumerate() {
+                            self.problem_prompt.push(
+                                if i % 2 == 0 {
+                                    PromptPart::Text(part.to_string())
+                                } else {
+                                    PromptPart::Latex(part.to_string())
+                                }
+                            );
+                        }
+                    },
+                    _ => (),
+                }
                 self.problem = status;
                 true
             }
@@ -160,7 +183,16 @@ impl Component for ProblemComponent {
                     </div>
 
                     <div class="prompt">
-                            { &problem.prompt }
+                            {
+                                for self.problem_prompt.iter().map(|part| match part {
+                                    PromptPart::Text(text) => html! {
+                                        <span class="part">{ text }</span>
+                                    },
+                                    PromptPart::Latex(text) => html! {
+                                        <span class="part rendermath">{ text }</span>
+                                    }
+                                })
+                            }
                         </div>
 
                     <div class="content">

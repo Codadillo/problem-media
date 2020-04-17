@@ -111,49 +111,69 @@ impl Component for App {
     fn view(&self) -> Html {
         info!("rendered!");
         info!("{:?}", self.route);
-        if let Some(user) = &self.user {
-            let user = user.clone();
-            html! {
-                <div class="app">
-                    <nav class="menu">
-                        <span class="title">
-                            { "AKSHAR" }
-                        </span>
-                        <div class="routes">
-                            <div class="createroute">
-                                <RouterButton<AppRoute> route=AppRoute::Create>{"Create Problems"}</RouterButton<AppRoute>>
+        html! {
+            <div>
+                <script>
+                    {r#"
+                        function renderlatex() {
+                            console.log("latex")
+                            document.querySelectorAll(".rendermath").forEach((element) => {
+                                katex.render(element.textContent, element, {
+                                    throwOnError: false
+                                });
+                                element.classList.remove("rendermath");
+                            });
+                        }
+                        setInterval(renderlatex, 500);
+                    "#}
+                </script>
+                {
+                    if let Some(user) = &self.user {
+                        let user = user.clone();
+                        html! {
+                            <div class="app">
+                                <nav class="menu">
+                                    <span class="title">
+                                        { "AKSHAR" }
+                                    </span>
+                                    <div class="routes">
+                                        <div class="createroute">
+                                            <RouterButton<AppRoute> route=AppRoute::Create>{"Create Problems"}</RouterButton<AppRoute>>
+                                        </div>
+                                        <div class="feedroute">
+                                            <RouterButton<AppRoute> route=AppRoute::Feed>{"Main Feed"}</RouterButton<AppRoute>>
+                                        </div>
+                                        <div class="loginroute">
+                                            <RouterButton<AppRoute> route=AppRoute::Login>{"Sign Out"}</RouterButton<AppRoute>>
+                                        </div>
+                                    </div>
+                                </nav>
+                                <Router<AppRoute>
+                                    render = Router::render(move |switch: AppRoute| {
+                                        match switch {
+                                            AppRoute::Login => html! { <LoginComponent></LoginComponent> },
+                                            AppRoute::Feed => html! { <FeedComponent user=user.clone() feed_endpoint=format!("{}/problems/?", API_URL) /> },
+                                            AppRoute::Create => html! { <CreateComponent user_id=user.id /> },
+                                        }
+                                    })
+                                />
                             </div>
-                            <div class="feedroute">
-                                <RouterButton<AppRoute> route=AppRoute::Feed>{"Main Feed"}</RouterButton<AppRoute>>
+                        }
+                    } else if self.route == Some(Route::from("/login".to_string())) {
+                        html! {
+                            <LoginComponent />
+                        }
+                    } else {
+                        html! {
+                            <div class="app">
+                                <div class="apploading">
+                                    { "Loading app" } // TODO: real loading screen
+                                </div>
                             </div>
-                            <div class="loginroute">
-                                <RouterButton<AppRoute> route=AppRoute::Login>{"Sign Out"}</RouterButton<AppRoute>>
-                            </div>
-                        </div>
-                    </nav>
-                    <Router<AppRoute>
-                        render = Router::render(move |switch: AppRoute| {
-                            match switch {
-                                AppRoute::Login => html! { <LoginComponent></LoginComponent> },
-                                AppRoute::Feed => html! { <FeedComponent user=user.clone() feed_endpoint=format!("{}/problems/?", API_URL) /> },
-                                AppRoute::Create => html! { <CreateComponent user_id=user.id /> },
-                            }
-                        })
-                    />
-                </div>
-            }
-        } else if self.route == Some(Route::from("/login".to_string())) {
-            html! {
-                <LoginComponent />
-            }
-        } else {
-            html! {
-                <div class="app">
-                    <div class="apploading">
-                        { "Loading app" } // TODO: real loading screen
-                    </div>
-                </div>
-            }
+                        }
+                    }
+                }
+            </div>
         }
     }
 }
