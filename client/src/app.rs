@@ -112,12 +112,23 @@ impl Component for App {
         info!("rendered!");
         info!("{:?}", self.route);
         if let Some(user) = &self.user {
-            let user = user.clone();
             html! {
                 <div class="app">
                     <nav class="menu">
-                    <RouterButton<AppRoute> route=AppRoute::Login>{"Log In"}</RouterButton<AppRoute>>
-                    <RouterButton<AppRoute> route=AppRoute::Create>{"Create Problems"}</RouterButton<AppRoute>>
+                        <span class="title">
+                            { "AKSHAR" }
+                        </span>
+                        <div class="routes">
+                            <div class="createroute">
+                                <RouterButton<AppRoute> route=AppRoute::Create>{"Create Problems"}</RouterButton<AppRoute>>
+                            </div>
+                            <div class="feedroute">
+                                <RouterButton<AppRoute> route=AppRoute::Feed>{"Main Feed"}</RouterButton<AppRoute>>
+                            </div>
+                            <div class="loginroute">
+                                <RouterButton<AppRoute> route=AppRoute::Login>{"Sign Out"}</RouterButton<AppRoute>>
+                            </div>
+                        </div>
                     </nav>
                     <Router<AppRoute>
                         render = Router::render(move |switch: AppRoute| {
