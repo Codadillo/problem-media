@@ -21,7 +21,7 @@ pub struct UserRequest {
 pub enum LoginMsg {
     ChangeUsername(String),
     ChangePassword(String),
-    MakeRequest,
+    MakeRequest(bool),
     Failure(String),
     Success,
     NoOp,
@@ -47,7 +47,7 @@ impl LoginComponent {
             .callback(move |event: InputData| LoginMsg::ChangePassword(event.value))
     }
 
-    fn send_request(&mut self) -> FetchTask {
+    fn send_request(&mut self, create: bool) -> FetchTask {
         let callback = self.link.callback(move |response: Response<Nothing>| {
             let (meta, _) = response.into_parts();
             if meta.status.is_success() {
@@ -56,7 +56,12 @@ impl LoginComponent {
                 LoginMsg::Failure(format!("{}", meta.status))
             }
         });
-        let request = Request::post(format!("{}/account/login", API_URL))
+        let path = if create {
+            format!("{}/account/create", API_URL)
+        } else {
+            format!("{}/account/login", API_URL)
+        };
+        let mut request = Request::post(path)
             .header("Content-Type", "application/json")
             .body(Json(&self.user_request))
             .unwrap();
@@ -95,8 +100,8 @@ impl Component for LoginComponent {
                 self.user_request.pass = password;
                 false
             }
-            LoginMsg::MakeRequest => {
-                self.ft = Some(self.send_request());
+            LoginMsg::MakeRequest(create) => {
+                self.ft = Some(self.send_request(create));
                 false
             }
             LoginMsg::Failure(error) => {
@@ -114,13 +119,18 @@ impl Component for LoginComponent {
 
     fn view(&self) -> Html {
         html! {
-            <div class="container">
-                <div class="errorbox">{self.error_message.clone()}</div>
-                <input type="text" class="username" oninput=self.update_username() />
-                <br></br>
-                <input type="password" class="password" oninput=self.update_password() />
-                <br></br>
-                <button class="submit" onclick=self.link.callback(move |_| LoginMsg::MakeRequest)>{"Login"}</button>
+            <div class="loginwrapper">
+                <div class="login">
+                    <div class="title">
+                        { "Sign In" }
+                    </div>
+                    <input type="text" class="username" oninput=self.update_username() />
+                    <br></br>
+                    <input type="password" class="password" oninput=self.update_password() />
+                    <div class="errorbox">{self.error_message.clone()}</div>
+                    <button class="submit" onclick=self.link.callback(move |_| LoginMsg::MakeRequest(false))>{"Login"}</button>
+                    <button class="create" onclick=self.link.callback(move |_| LoginMsg::MakeRequest(true))>{"Create"}</button>
+                </div>
             </div>
         }
     }

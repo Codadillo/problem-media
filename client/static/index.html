@@ -12,9 +12,66 @@
             --medium-color: #dddddd;
             --dark-color: #aaaaaa;
             --error-color: #ff3333;
+            --success-color: #2cb14b;
+            --success-hover-color: #34d058;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        }
+        .loginwrapper {
+            display: flex;
+            justify-content: center;
+            margin-top: 10%;
+        }
+        .login {
+            border: 1px solid grey;
+            border-radius: 5px;
+            padding: 20px;
+        }
+        .login .title {
+            font-size: 28px;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        .login input {
+            width: 190px;
+            height: 25px;
+            margin: 5px;
+            border-radius: 5px;
+            border: 1px solid grey;
+            padding: 5px;
+            padding-left: 10px;
+            font-size: 18px;
+        }
+        .login button {
+            margin: 5px;
+            width: 90px;
+            height: 28px;
+            border: 1px solid grey;
+            border-radius: 5px;
+            font-size: 15px;
+        }
+        .login button:hover {
+            cursor: pointer;
+        }
+        .login .submit {
+            background-color: var(--success-color);
+            color: white;
+        }
+        .login .submit:hover {
+            background-color: var(--success-hover-color);
+        }
+        .login .create {
+            float: right;
+            background-color: #eeeeee;
+        }
+        .login .create:hover {
+            background-color: white;
+        }
+        .login .errorbox {
+            color: var(--error-color);
+            font-size: 12px;
+            margin: 5px;
         }
         .feed .problemswrapper {
             display: flex;
