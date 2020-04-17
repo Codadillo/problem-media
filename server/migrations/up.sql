@@ -13,5 +13,6 @@ CREATE TABLE problems (
     tags VarChar[] NOT NULL,
     prompt VarChar NOT NULL,
     data VarChar NOT NULL,
-    recommendations Int4 NOT NULL DEFAULT 0
+    recommendations Int4 NOT NULL DEFAULT 0,
+    explanation VarChar NOT NULL
 );

@@ -9,6 +9,7 @@ pub struct Problem {
     pub tags: Vec<String>,
     pub prompt: String,
     pub content: ProblemContent,
+    pub explanation: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -18,6 +19,7 @@ pub struct NewProblem {
     pub tags: Vec<String>,
     pub prompt: String,
     pub content: ProblemContent,
+    pub explanation: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

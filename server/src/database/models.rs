@@ -102,6 +102,7 @@ pub struct DbProblem {
     pub prompt: String,
     pub data: String,
     pub recommendations: i32,
+    pub explanation: String,
 }
 
 impl DbProblem {
@@ -127,6 +128,7 @@ impl DbProblem {
             topic: serde_json::from_str(&self.topic)?,
             tags: self.tags,
             content: serde_json::from_str(&self.data)?,
+            explanation: self.explanation,
         })
     }
 }
@@ -140,6 +142,7 @@ pub struct NewDbProblem {
     pub tags: Vec<String>,
     pub prompt: String,
     pub data: String,
+    pub explanation: String,
 }
 
 impl NewDbProblem {
@@ -153,6 +156,7 @@ impl NewDbProblem {
             tags: problem.tags,
             prompt: problem.prompt,
             data: serde_json::to_string(&problem.content)?,
+            explanation: problem.explanation,
         })
     }
 

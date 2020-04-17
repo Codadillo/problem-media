@@ -40,6 +40,7 @@ async fn create(
     pool: web::Data<DbPool>,
     req: web::Json<problems::NewProblem>,
 ) -> Result<impl Responder, Error> {
+    println!("{:?}", req);
     if !validate(&session, pool.clone()).await?
         || req.owner_id != session.get::<models::SessionUser>("user")?.unwrap().id
     {

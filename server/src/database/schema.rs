@@ -17,5 +17,6 @@ table! {
         prompt -> Varchar,
         data -> Varchar,
         recommendations -> Int4,
+        explanation -> Varchar,
     }
 }
