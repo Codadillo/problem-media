@@ -351,7 +351,7 @@ impl Component for CreateComponent {
                                             }
                                             onclick=&self.set_topic(topic.clone())>
                                             {
-                                                serde_json::to_string(&topic).unwrap().replace(r#"""#, "")
+                                                serde_json::to_string(&topic).unwrap().replace(r#"""#, "").replace("Trivia", "Linguistics")
                                             }
                                         </div>
                                     }
