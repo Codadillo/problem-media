@@ -20,7 +20,7 @@ pub struct NewProblem {
     pub content: ProblemContent,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Topic {
     Math,
     Trivia,
@@ -43,7 +43,7 @@ pub enum ProblemContent {
     },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ProblemType {
     FreeResponse,
     MultipleChoice,

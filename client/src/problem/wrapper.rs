@@ -1,6 +1,6 @@
 use crate::{
     app::API_URL,
-    problem::{
+    problem::variants::{
         checklist::ChecklistComponent, free_response::FreeRespComponent,
         multiple_choice::MultChoiceComponent,
     },
