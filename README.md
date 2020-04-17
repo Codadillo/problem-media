@@ -1,15 +1,15 @@
-# Enygma (Nuevahacks project)
+# Enygma (Nuevahacks 2020 project)
 ## Brief description
-As the current school system has been upended, it is very important to explore novel ways we can exercise our minds independently of whatever systems existed previously. Created in response to this need, Enygma is a social-media-esque platform for sharing and creating interesting problems. 
+As the current school system has been upended as a result of the COVID-19 pandemic, it is very important to explore novel ways we can exercise our minds independently of whatever systems existed previously. Created in response to this need, Enygma is a social-media-esque platform for sharing and creating interesting problems. 
 
 ## Infrastructure
 * The client
-  * Located in /client of this repo
+  * Located in `/client` of this repo
   * This is the frontend of the application
   * Written in Rust using yew
 * The main server
-  * Located in /server of this repo
-  * Hosts the client application as well as the public api surface for Enygma
+  * Located in `/server` of this repo
+  * Hosts the client application as well as the public API surface for Enygma
   * Written in rust using actix-web
 * The PostgreSQL server
   * This is hosted privately and is only interfaced by the main server 
@@ -18,15 +18,15 @@ As the current school system has been upended, it is very important to explore n
   * This interacts with the main server to generate recommendations for each user based on a variety of factors
   * Located at [https://github.com/countableclouds/rec_system](https://github.com/countableclouds/rec_system)
 
-## RoadMap (Things we need to get done)
+## Roadmap (Things we need to get done)
 - [ ] Infrastructure
   * Implement infrastructure plans to connect recommendation server to main server
 - [ ] Improve the UI
-  * Currently the CSS could use some improving
+  * Improve CSS styling
 - [ ] Profile page
   * View and follow users' profiles
 - [ ] Vetting system
-  * Allow problem owners to vett solutions to their problems
+  * Allow problem owners to vet solutions to their problems
 - [ ] Discussion system
   * Allow users to discuss solutions
 - [ ] Difficulty system
@@ -34,7 +34,7 @@ As the current school system has been upended, it is very important to explore n
 - [ ] Creation studio
   * Improve the problem creation studio to allow creation collections of problems and editing problems
 - [ ] Security
-  * Currently there aren't any sophisticated security measures on the server (no protections against botting, etc)
+  * Develop sophisticated security measures on the server (e.g., protections against botting, etc)
 
 etc
 
