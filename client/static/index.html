@@ -11,12 +11,7 @@
             --navbar-color: #4c83c4;
             --navbar-compliment-color: #524cc4;
             --navbar-light-compliment-color: #a9a5fd;
-            --light-color: white;
-            --medium-color: #dddddd;
-            --dark-color: #aaaaaa;
             --error-color: #ff3333;
-            --success-color: #2cb14b;
-            --success-hover-color: #34d058;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
@@ -108,11 +103,11 @@
             cursor: pointer;
         }
         .login .submit {
-            background-color: var(--success-color);
+            background-color: var(--navbar-light-compliment-color);
             color: white;
         }
         .login .submit:hover {
-            background-color: var(--success-hover-color);
+            background-color: var(--navbar-compliment-color);
         }
         .login .create {
             float: right;
@@ -134,6 +129,10 @@
             justify-content: center;
         }
         .feed .problems {
+            padding-left: 50px;
+            padding-right: 50px;
+            border-right: 1px solid grey;
+            border-left: 1px solid grey;
             display: flex;
             flex-flow: column nowrap;
             justify-content: center;
@@ -146,20 +145,28 @@
             border-radius: 5px;
             margin-bottom: 20px;
         }
-        .feed .header {
+        .feed .headerwrapper {
             border-bottom: var(--feed-problem-border-color) solid 1px;
-            padding-bottom: 3px;
-            margin-bottom: 7px;
+            background-color: var(--navbar-color);
+            border-top-left-radius: 3px;
+            border-top-right-radius: 3px;
+        }
+        .feed .header {
+            margin-left: 10px;
         }
         .feed .topic {
             font-size: 20px;
             display: inline-block;
-            padding-left: 7px;
-            padding-right: 7px;
-            padding-top: 5px;
+            padding-left: 14px;
+            padding-right: 6px;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            color: white;
+            user-select: none;
         }
         .feed .tags {
             display: inline-block;
+            padding-bottom: 3px;
         }
         .feed .tag {
             font-size: 10px;
@@ -175,7 +182,11 @@
         .feed .prompt {
             padding: 10px;
             margin-bottom: 3px;
+            margin-top: 10px;
+            margin-left: 3px;
+            margin-right: 3px;
             font-size: 15px;
+            line-height: 20px;
         }
         .feed .freeresponse {
             padding: 10px;
@@ -206,11 +217,16 @@
         }
         .feed .option.selected {
             font-weight: bold;
+            color: var(--navbar-compliment-color);
         }
         .feed .footer {
-            margin-top: 17px;
-            padding-bottom: 4px;
+            margin-top: 20px;
+            padding: 10px;
             border-top: 1px solid var(--feed-problem-border-color);
+            background-color: var(--navbar-light-compliment-color);
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+            user-select: none;
         }
         .feed .reccount {
             display: inline;
@@ -263,14 +279,15 @@
             border: 2px solid var(--creator-studio-border-color);
             padding: 5px;
             font-size: 15px;
-            background-color: var(--light-color);
+            background-color: var(white);
         }
         .createproblem .topic:hover,.type:hover {
             cursor: pointer;
-            background-color: var(--medium-color);
+            background-color: var(--navbar-light-compliment-color);
         }
         .createproblem .topic.selected,.type.selected {
-            background-color: var(--dark-color);
+            background-color: var(--navbar-compliment-color);
+            color: white;
         }
         .createproblem .left {
             border-bottom-left-radius: 5px;
@@ -331,6 +348,7 @@
         }
         .createproblem .option.selected {
             font-weight: bold;
+            color: var(--navbar-compliment-color);
         }
         .createproblem .option:hover {
             cursor: pointer;

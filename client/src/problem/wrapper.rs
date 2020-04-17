@@ -148,12 +148,14 @@ impl Component for ProblemComponent {
         match &self.problem {
             ProblemStatus::Loaded(problem) => html! {
                 <div class="problem loaded">
-                    <div class="header">
-                        <div class="topic">
-                            { serde_json::to_string(&problem.topic).unwrap().replace(r#"""#, "") }
-                        </div>
-                        <div class="tags">
-                            { for problem.tags.iter().map(|tag| html! { <div class="tag">{tag}</div> }) }
+                    <div class="headerwrapper">
+                        <div class="header">
+                            <div class="topic">
+                                { serde_json::to_string(&problem.topic).unwrap().replace(r#"""#, "") }
+                            </div>
+                            <div class="tags">
+                                { for problem.tags.iter().map(|tag| html! { <div class="tag">{tag}</div> }) }
+                            </div>
                         </div>
                     </div>
 
