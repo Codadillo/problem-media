@@ -77,7 +77,7 @@ pub enum CreateMsg {
     AddChoice,
     RemoveChoice(usize),
     // Requests stuff
-    CreationSuccess,
+    CreationSuccess(i32),
     CreationFailure(String),
 }
 
@@ -154,7 +154,7 @@ impl CreateComponent {
                 let (meta, Json(new_id)) = response.into_parts();
                 if meta.status.is_success() {
                     match new_id {
-                        Ok(_id) => CreateMsg::CreationSuccess,
+                        Ok(new_id) => CreateMsg::CreationSuccess(new_id),
                         Err(error) => CreateMsg::CreationFailure(format!("{}", error)),
                     }
                 } else {
@@ -305,9 +305,9 @@ impl Component for CreateComponent {
                 self.error_message = error_message;
                 true
             }
-            CreateMsg::CreationSuccess => {
+            CreateMsg::CreationSuccess(_id) => {
                 self.router
-                    .send(RouteRequest::ChangeRoute(Route::from("/create".to_string())));
+                    .send(RouteRequest::ChangeRoute(Route::from("/feed".to_string())));
                 true
             }
         }
