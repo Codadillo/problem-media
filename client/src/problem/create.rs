@@ -315,7 +315,7 @@ impl Component for CreateComponent {
 
     fn view(&self) -> Html {
         let topics = vec![Topic::Math, Topic::Trivia, Topic::Logic];
-        let problem_types = vec![ProblemType::MultipleChoice];
+        let problem_types = vec![ProblemType::MultipleChoice, ProblemType::FreeResponse, ProblemType::Checklist];
         html! {
             <div class="createproblemwrapper">
                 <div class="createproblem">
@@ -403,7 +403,14 @@ impl Component for CreateComponent {
                                                 }
                                                 classes
                                             }
-                                            onclick=&self.set_content(ProblemContentBuilder::default_from_type(&p_type))>
+                                            onclick={
+                                                if i == 0 {
+                                                    self.set_content(ProblemContentBuilder::default_from_type(&p_type))
+                                                } else {
+                                                    self.link.callback(|_| CreateMsg::NoOp)
+                                                }
+                                            }
+                                            >
                                             {
                                                 serde_json::to_string(&p_type).unwrap().replace(r#"""#, "")
                                             }
