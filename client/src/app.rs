@@ -112,6 +112,7 @@ impl Component for App {
         info!("rendered!");
         info!("{:?}", self.route);
         if let Some(user) = &self.user {
+            let user = user.clone();
             html! {
                 <div class="app">
                     <nav class="menu">
