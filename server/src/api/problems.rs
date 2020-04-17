@@ -23,7 +23,7 @@ async fn index(
     web::Query(req): web::Query<models::ProblemQuery>,
 ) -> Result<impl Responder, Error> {
     if !validate(&session, pool.clone()).await? {
-        return Ok(HttpResponse::BadRequest().finish());
+        return Ok(HttpResponse::NotAcceptable().finish());
     }
     let conn = pool.get().expect("couldn't get db connection from pool");
     let problems = web::block(move || req.query(&conn)).await.map_err(|e| {
@@ -43,7 +43,7 @@ async fn create(
     if !validate(&session, pool.clone()).await?
         || req.owner_id != session.get::<models::SessionUser>("user")?.unwrap().id
     {
-        return Ok(HttpResponse::BadRequest().finish());
+        return Ok(HttpResponse::NotAcceptable().finish());
     }
     let conn = pool.get().expect("couldn't get db connection from pool");
     let new_db_problem = models::NewDbProblem::from_new_problem(req.into_inner())
@@ -67,7 +67,7 @@ async fn get(
     id: web::Path<i32>,
 ) -> Result<impl Responder, Error> {
     if !validate(&session, pool.clone()).await? {
-        return Ok(HttpResponse::BadRequest().finish());
+        return Ok(HttpResponse::NotAcceptable().finish());
     }
     let conn = pool.get().expect("couldn't get db connection from pool");
     let db_problem = web::block(move || models::DbProblem::get_by_id(id.into_inner(), &conn))
@@ -93,7 +93,7 @@ async fn recommend(
     req: web::Path<(i32, bool)>,
 ) -> Result<impl Responder, Error> {
     if !validate(&session, pool.clone()).await? {
-        return Ok(HttpResponse::BadRequest().finish());
+        return Ok(HttpResponse::NotAcceptable().finish());
     }
     let conn = pool.get().expect("couldn't get db connection from pool");
     let id = req.0;
@@ -113,9 +113,20 @@ async fn recommend(
                 let problem = models::DbProblem::get_by_id(id, &conn)?;
                 if let Some(mut problem) = problem {
                     if undo {
-                        let id_index = user.recommended_ids.binary_search(&id).unwrap();
-                        user.recommended_ids.remove(id_index);
-                        problem.recommendations -= 1;
+                        match user
+                            .recommended_ids
+                            .iter()
+                            .enumerate()
+                            .skip_while(|(_, rec_id)| **rec_id != id)
+                            .next()
+                        {
+                            Some((id_index, found_id)) => {
+                                assert_eq!(*found_id, id);
+                                user.recommended_ids.remove(id_index);
+                                problem.recommendations -= 1;
+                            }
+                            None => return Ok(Err("Phantom undo")),
+                        }
                     } else {
                         user.recommended_ids.push(id);
                         problem.recommendations += 1;
