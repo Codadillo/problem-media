@@ -1,9 +1,10 @@
 use crate::{
     app::API_URL,
     problem::{
-    checklist::ChecklistComponent, free_response::FreeRespComponent,
-    multiple_choice::MultChoiceComponent,
-}};
+        checklist::ChecklistComponent, free_response::FreeRespComponent,
+        multiple_choice::MultChoiceComponent,
+    },
+};
 use common::problems::{Problem, ProblemContent};
 use log::*;
 use yew::{
@@ -23,42 +24,75 @@ pub enum ProblemStatus {
 
 pub enum ProblemMsg {
     StatusUpdate(ProblemStatus),
-    SendRec,
-    UndoRec,
+    ToggleRec,
     RecSuccess(i32),
     RecFailure(String),
 }
 
-
 #[derive(Debug, Clone, Properties)]
 pub struct ProblemProps {
     pub problemid: i32,
+    pub recommended: bool,
 }
 
 pub struct ProblemComponent {
     link: ComponentLink<Self>,
     fetch_service: FetchService,
-    ft: Option<FetchTask>,
+    problem_ft: Option<FetchTask>,
+    rec_ft: Option<FetchTask>,
     props: ProblemProps,
-    problem: ProblemStatus
+    problem: ProblemStatus,
 }
 
 impl ProblemComponent {
-    fn send_request(&mut self) -> FetchTask {
-        let callback = self.link.callback(move |response: Response<Json<Result<Problem, anyhow::Error>>>| {
-            let (meta, Json(problem_resp)) = response.into_parts();
-            ProblemMsg::StatusUpdate(match problem_resp {
-                Ok(problem_resp) => if meta.status.is_success() {
-                    ProblemStatus::Loaded(problem_resp)
-                } else {
-                    ProblemStatus::Failed(format!("{}", meta.status))
-                },
-                Err(error) => ProblemStatus::Failed(format!("ERROR: {}", error))
-            })
-        });
+    fn toggle_recommend(&self) -> Callback<MouseEvent> {
+        self.link.callback(move |_| ProblemMsg::ToggleRec)
+    }
+
+    fn send_problem_request(&mut self) -> FetchTask {
+        let callback = self.link.callback(
+            move |response: Response<Json<Result<Problem, anyhow::Error>>>| {
+                let (meta, Json(problem_resp)) = response.into_parts();
+                ProblemMsg::StatusUpdate(match problem_resp {
+                    Ok(problem_resp) => {
+                        if meta.status.is_success() {
+                            ProblemStatus::Loaded(problem_resp)
+                        } else {
+                            ProblemStatus::Failed(format!("{}", meta.status))
+                        }
+                    }
+                    Err(error) => ProblemStatus::Failed(format!("ERROR: {}", error)),
+                })
+            },
+        );
         let request = Request::get(format!("{}/problems/{}/", API_URL, self.props.problemid))
             .body(Nothing)
             .unwrap();
+        self.fetch_service.fetch(request, callback).unwrap()
+    }
+
+    fn send_rec_request(&mut self) -> FetchTask {
+        let callback = self.link.callback(
+            move |response: Response<Json<Result<i32, anyhow::Error>>>| {
+                let (meta, Json(problem_resp)) = response.into_parts();
+                match problem_resp {
+                    Ok(problem_resp) => {
+                        if meta.status.is_success() {
+                            ProblemMsg::RecSuccess(problem_resp)
+                        } else {
+                            ProblemMsg::RecFailure(format!("{}", meta.status))
+                        }
+                    }
+                    Err(error) => ProblemMsg::RecFailure(format!("ERROR: {}", error)),
+                }
+            },
+        );
+        let request = Request::get(format!(
+            "{}/problems/{}/recommend/{}",
+            API_URL, self.props.problemid, self.props.recommended
+        ))
+        .body(Nothing)
+        .unwrap();
         self.fetch_service.fetch(request, callback).unwrap()
     }
 }
@@ -71,11 +105,12 @@ impl Component for ProblemComponent {
         let mut component = Self {
             link,
             fetch_service: FetchService::new(),
-            ft: None,
+            problem_ft: None,
+            rec_ft: None,
             problem: ProblemStatus::Loading,
             props,
         };
-        component.ft = Some(component.send_request());
+        component.problem_ft = Some(component.send_problem_request());
         component
     }
 
@@ -84,8 +119,28 @@ impl Component for ProblemComponent {
             ProblemMsg::StatusUpdate(status) => {
                 self.problem = status;
                 true
-            },
-            _ => unimplemented!("Not all problem messages are handled yet"),
+            }
+            ProblemMsg::ToggleRec => {
+                if let ProblemStatus::Loaded(problem) = &self.problem {
+                    self.rec_ft = Some(self.send_rec_request());
+                } else {
+                    info!("Attempt to toggle recommendation before problem load");
+                }
+                true
+            }
+            ProblemMsg::RecSuccess(rec_count) => {
+                if let ProblemStatus::Loaded(problem) = &mut self.problem {
+                    problem.recommendations = rec_count;
+                    self.props.recommended = !self.props.recommended;
+                } else {
+                    info!("Recieved rec success before problem load");
+                }
+                true
+            }
+            ProblemMsg::RecFailure(error_message) => {
+                info!("Error when making rec: {}", error_message);
+                false
+            }
         }
     }
 
@@ -132,9 +187,21 @@ impl Component for ProblemComponent {
                         <div class="reccount">
                             { problem.recommendations } { " recs" }
                         </div>
-                        <div class="rec">
-                            { "Recommend!" }
-                        </div>
+                        {
+                            if self.props.recommended {
+                                html! {
+                                    <div onclick=&self.toggle_recommend() class="rec true">
+                                        { "Unrecommend" }
+                                    </div>
+                                }
+                            } else {
+                                html! {
+                                    <div onclick=&self.toggle_recommend() class="rec false">
+                                        { "Recommend!" }
+                                    </div>
+                                }
+                            }
+                        }
                     </div>
                 </div>
             },
@@ -147,7 +214,7 @@ impl Component for ProblemComponent {
                 <div class="problem failed">
                     { error }
                 </div>
-            }
+            },
         }
     }
 }

@@ -1,5 +1,5 @@
-use crate::problem::wrapper::ProblemComponent;
-use common::problems::{Problem, ProblemContent};
+use crate::{app::API_URL, problem::wrapper::ProblemComponent};
+use common::{user::User, problems::{Problem, ProblemContent}};
 use log::*;
 use yew::{
     format::{Json, Nothing},
@@ -18,18 +18,21 @@ pub struct FeedProps {
 #[derive(Debug)]
 pub enum FeedMsg {
     LoadedProblems(Vec<i32>),
+    LoadedUser(User),
 }
 
 pub struct FeedComponent {
     link: ComponentLink<Self>,
     fetch_service: FetchService,
-    ft: Option<FetchTask>,
+    problems_ft: Option<FetchTask>,
+    user_ft: Option<FetchTask>,
     props: FeedProps,
     problems: Vec<i32>,
+    user: Option<User>,
 }
 
 impl FeedComponent {
-    fn send_request(&mut self) -> FetchTask {
+    fn send_problems_request(&mut self) -> FetchTask {
         let callback = self.link.callback(move |response: Response<Json<Result<Vec<i32>, anyhow::Error>>>| {
             let (meta, Json(problem_ids)) = response.into_parts();
             match problem_ids {
@@ -40,6 +43,23 @@ impl FeedComponent {
         let request = Request::get(&self.props.feed_endpoint)
             .body(Nothing)
             .unwrap();
+        self.fetch_service.fetch(request, callback).unwrap()
+    }
+
+    fn send_user_request(&mut self) -> FetchTask {
+        let callback = self.link.callback(move |response: Response<Json<Result<User, anyhow::Error>>>| {
+            let (meta, Json(user)) = response.into_parts();
+            match user {
+                Ok(user) => FeedMsg::LoadedUser(user),
+                Err(error) => unimplemented!("No error handling if feed request to /account fails"),
+            }
+        });
+        let request = 
+        // Request::get(format!("{}/account/", API_URL))
+        Request::get(format!("{}/account/1", API_URL))
+            .body(Nothing)
+            .unwrap();
+        info!("USING USER 1 RATHER THAN SESSION USER FOR TESTING"); // TODO
         self.fetch_service.fetch(request, callback).unwrap()
     }
 }
@@ -53,10 +73,13 @@ impl Component for FeedComponent {
             link,
             props,
             fetch_service: FetchService::new(),
-            ft: None,
+            problems_ft: None,
+            user_ft: None,
             problems: vec![],
+            user: None,
         };
-        component.ft = Some(component.send_request());
+        component.problems_ft = Some(component.send_problems_request());
+        component.user_ft = Some(component.send_user_request());
         component
     }
 
@@ -66,6 +89,10 @@ impl Component for FeedComponent {
                 self.problems = problems;
                 true
             }
+            FeedMsg::LoadedUser(user) => {
+                self.user = Some(user);
+                true
+            }
         }
     }
 
@@ -73,7 +100,7 @@ impl Component for FeedComponent {
         html! {
             <div class="feed">
                 {
-                    if self.problems.is_empty() { // TODO: loading gif
+                    if self.problems.is_empty() || self.user.is_none() { // TODO: loading gif
                         html! {
                             <div class="loading">
                                 { "Loading feed" }
@@ -85,7 +112,7 @@ impl Component for FeedComponent {
                                 <div class="problems">
                                     {
                                         for self.problems.iter().map(|problem_id| html! {
-                                            <ProblemComponent problemid={ problem_id } />
+                                            <ProblemComponent problemid={ problem_id } recommended=self.user.as_ref().unwrap().recommended_ids.contains(&problem_id) />
                                         })
                                     }
                                 </div>
