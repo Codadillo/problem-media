@@ -288,6 +288,7 @@ impl Component for CreateComponent {
                                         options: options.clone(),
                                         solution,
                                     },
+                                    explanation: "".to_string() // TODO
                                 };
                                 self.error_message = "".into();
                                 self.ft = Some(self.send_creation_request(req));
