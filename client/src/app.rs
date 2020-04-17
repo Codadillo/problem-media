@@ -14,9 +14,9 @@ use yew::{
 };
 use yew_router::{agent::RouteRequest, prelude::*, Switch};
 
-pub const HOST_URL: &'static str = "http://localhost:8000"/*env!("APP_HOST_URL")*/;
+pub const HOST_URL: &'static str = env!("APP_HOST_URL");
 pub const API_URL: &'static str = concat!(
-    "http://localhost:8081", /*env!("APP_HOST_URL")*/
+    env!("APP_HOST_URL"),
     "/api"
 );
 
