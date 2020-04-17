@@ -102,14 +102,14 @@ async fn main() -> std::io::Result<()> {
                     .path("/")
                     .secure(false),
             )
-            .wrap(
-                // TODO: Use separate CORS headers for debug/release
-                Cors::new()
-                    .allowed_origin("http://localhost:8000")
-                    .allowed_methods(vec!["GET", "POST", "OPTIONS"])
-                    .allowed_header(http::header::CONTENT_TYPE)
-                    .finish(),
-            )
+            // .wrap(
+            //     // TODO: Use separate CORS headers for debug/release
+            //     Cors::new()
+            //         .allowed_origin("http://localhost:8000")
+            //         .allowed_methods(vec!["GET", "POST", "OPTIONS"])
+            //         .allowed_header(http::header::CONTENT_TYPE)
+            //         .finish(),
+            // )
             .service(web::scope("/api").configure(api::config))
             .service(
                 Files::new("", FRONTEND_PATH.clone())
