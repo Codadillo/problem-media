@@ -9,7 +9,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/")
             .route("", web::get().to(get_from_session))
-            .route("/create", web::get().to(create))
+            .route("/create", web::post().to(create))
             .route("/login", web::post().to(login))
             .route("/{id}", web::get().to(get)),
     );
