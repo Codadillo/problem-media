@@ -7,6 +7,10 @@
     <style>
         :root {
             --feed-problem-border-color: black;
+            --creator-studio-border-color: black;
+            --light-color: white;
+            --medium-color: #dddddd;
+            --dark-color: #aaaaaa;
             --error-color: #ff3333;
         }
         body {
@@ -105,6 +109,119 @@
             padding-right: 7px;
         }
         .feed .rec:hover {
+            cursor: pointer;
+        }
+
+        .createproblemwrapper {
+            display: flex;
+            justify-content: center;
+        }
+        .createproblem {
+            width: 50%;
+        }
+        .createproblem .errorbox {
+            position: sticky;
+            background-color: white;
+            top: 0;
+            text-align: center;
+            color: var(--error-color);
+            width: 100%;
+        }
+        .createproblem .title {
+            text-align: center;
+            font-size: 25px;
+            margin-bottom: 12px;
+        }
+        .createproblem .prompt {
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+        .createproblem .selector {
+            margin-bottom: 25px;
+        }
+        .createproblem .topicoptions,.typeoptions {
+            display: flex;
+            justify-content: center;
+        }
+        .createproblem .topic,.type {
+            width: 33%;
+            text-align: center;
+            border: 2px solid var(--creator-studio-border-color);
+            padding: 5px;
+            font-size: 15px;
+            background-color: var(--light-color);
+        }
+        .createproblem .topic:hover,.type:hover {
+            cursor: pointer;
+            background-color: var(--medium-color);
+        }
+        .createproblem .topic.selected,.type.selected {
+            background-color: var(--dark-color);
+        }
+        .createproblem .left {
+            border-bottom-left-radius: 5px;
+            border-top-left-radius: 5px;
+            border-right-width: 1px;
+        }
+        .createproblem .right {
+            border-bottom-right-radius: 5px;
+            border-top-right-radius: 5px;
+            border-left-width: 1px;
+        }
+        .createproblem .center {
+            border-left-width: 1px;
+            border-right-width: 1px;
+        }
+        .createproblem .tags {
+            display: inline;
+        }
+        .createproblem .tag {
+            font-size: 10px;
+            display: inline-block;
+            border: 1px solid grey;
+            margin: 3px;
+            margin-bottom: 5px;
+            margin-top: -2px;
+            padding: 4px;
+            padding-top: 2px;
+            padding-bottom: 2px;
+            background-color: #ededed;
+            border-radius: 3px;
+        }
+        .createproblem .tag:hover {
+            cursor: pointer;
+        }
+        .createproblem input {
+            border-radius: 2px;
+            border: 1px grey solid;
+            width: 70%;
+        }
+        .createproblem button:hover {
+            cursor: pointer;
+        }
+        .createproblem textarea {
+            padding: 5px;
+            width: 100%;
+            height: 39px;
+            resize: vertical;
+            border-radius: 2px;
+            border: 1px solid var(--creator-studio-border-color);
+        }
+        .createproblem .optionwrapper {
+            margin-top: 5px;
+            margin-left: 10px;
+        }
+        .createproblem .option {
+            margin-left: 7px;
+            display: inline;
+        }
+        .createproblem .option.selected {
+            font-weight: bold;
+        }
+        .createproblem .option:hover {
+            cursor: pointer;
+        }
+        .createproblem .optionmarker:hover {
             cursor: pointer;
         }
     </style>

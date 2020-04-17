@@ -10,6 +10,7 @@ use yew::{
         FetchService,
     },
 };
+use yew_router::{agent::RouteRequest, prelude::*};
 
 #[derive(Debug, Clone)]
 struct ProblemBuilder {
@@ -61,6 +62,7 @@ impl ProblemContentBuilder {
 }
 
 pub enum CreateMsg {
+    NoOp,
     // All problems
     SetTopic(Topic),
     SetContent(ProblemContentBuilder),
@@ -87,6 +89,7 @@ pub struct CreateProps {
 pub struct CreateComponent {
     link: ComponentLink<Self>,
     props: CreateProps,
+    router: Box<dyn Bridge<RouteAgent>>,
     fetch_service: FetchService,
     ft: Option<FetchTask>,
     builder: ProblemBuilder,
@@ -146,17 +149,19 @@ impl CreateComponent {
     }
 
     fn send_creation_request(&mut self, new_problem: NewProblem) -> FetchTask {
-        let callback = self.link.callback(move |response: Response<Json<Result<i32, anyhow::Error>>>| {
-            let (meta, Json(new_id)) = response.into_parts();
-            if meta.status.is_success() {
-                match new_id {
-                    Ok(_id) => CreateMsg::CreationSuccess,
-                    Err(error) => CreateMsg::CreationFailure(format!("{}", error)),
+        let callback = self.link.callback(
+            move |response: Response<Json<Result<i32, anyhow::Error>>>| {
+                let (meta, Json(new_id)) = response.into_parts();
+                if meta.status.is_success() {
+                    match new_id {
+                        Ok(_id) => CreateMsg::CreationSuccess,
+                        Err(error) => CreateMsg::CreationFailure(format!("{}", error)),
+                    }
+                } else {
+                    CreateMsg::CreationFailure(format!("{}", meta.status))
                 }
-            } else {
-                CreateMsg::CreationFailure(format!("{}", meta.status))
-            }
-        });
+            },
+        );
         let request = Request::post(format!("{}/problems/", API_URL))
             .header("Content-Type", "application/json")
             .body(Json(&new_problem))
@@ -170,9 +175,13 @@ impl Component for CreateComponent {
     type Properties = CreateProps;
 
     fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
+        let callback = link.callback(|_| CreateMsg::NoOp);
+        let router = RouteAgent::bridge(callback);
+
         Self {
             link,
             props,
+            router,
             fetch_service: FetchService::new(),
             ft: None,
             builder: ProblemBuilder::default(),
@@ -184,6 +193,7 @@ impl Component for CreateComponent {
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
+            CreateMsg::NoOp => false,
             CreateMsg::SetTopic(topic) => {
                 self.builder.topic = Some(topic);
                 true
@@ -201,7 +211,9 @@ impl Component for CreateComponent {
                 false
             }
             CreateMsg::CreateTag => {
-                self.builder.tags.push(self.new_tag_text.clone());
+                if !self.new_tag_text.is_empty() {
+                    self.builder.tags.push(self.new_tag_text.clone());
+                }
                 true
             }
             CreateMsg::UpdatePrompt(new_prompt) => {
@@ -228,7 +240,9 @@ impl Component for CreateComponent {
             CreateMsg::AddChoice => {
                 match &mut self.builder.content {
                     ProblemContentBuilder::MultipleChoice { options, solution } => {
-                        options.push(self.content_input_buffer.clone())
+                        if !self.content_input_buffer.is_empty() {
+                            options.push(self.content_input_buffer.clone());
+                        }
                     }
                 }
                 true
@@ -270,7 +284,10 @@ impl Component for CreateComponent {
                                     topic: topic.clone(),
                                     tags: self.builder.tags.clone(),
                                     prompt: self.builder.prompt.clone(),
-                                    content: ProblemContent::MultipleChoice { options: options.clone(), solution }
+                                    content: ProblemContent::MultipleChoice {
+                                        options: options.clone(),
+                                        solution,
+                                    },
                                 };
                                 self.error_message = "".into();
                                 self.ft = Some(self.send_creation_request(req));
@@ -287,129 +304,153 @@ impl Component for CreateComponent {
             CreateMsg::CreationFailure(error_message) => {
                 self.error_message = error_message;
                 true
-            },
+            }
             CreateMsg::CreationSuccess => {
-                info!("SUCCESS");
+                self.router
+                    .send(RouteRequest::ChangeRoute(Route::from("/create".to_string())));
                 true
             }
         }
     }
 
     fn view(&self) -> Html {
+        let topics = vec![Topic::Math, Topic::Trivia, Topic::Logic];
+        let problem_types = vec![ProblemType::MultipleChoice];
         html! {
-            <div class="createproblem">
-                <div class="errorbox">
-                    { &self.error_message }
-                </div>
-                <div class="topicselector">
-                    <div class="topicprompt">
-                        { "Please pick a general topic for your problem:" }
+            <div class="createproblemwrapper">
+                <div class="createproblem">
+                    <div class="title">
+                        { "Problem Creation Studio" }
                     </div>
-                    <div class="topicoptions">
-                        {
-                            for vec![Topic::Math, Topic::Trivia, Topic::Logic].iter().map(|topic| {
-                                html! {
-                                    <div
-                                        class={
-                                            if self.builder.topic == Some(topic.clone()) {
-                                                "topic selected"
-                                            } else {
-                                                "topic"
+                    <div class="errorbox">
+                        { &self.error_message }
+                    </div>
+                    <div class="selector">
+                        <div class="prompt">
+                            { "Step 1: Pick a general topic" }
+                        </div>
+                        <div class="topicoptions">
+                            {
+                                for topics.iter().enumerate().map(|(i, topic)| {
+                                    html! {
+                                        <div
+                                            class={
+                                                let mut classes = "topic".to_string();
+                                                if self.builder.topic == Some(topic.clone()) {
+                                                    classes.push_str(" selected")
+                                                }
+                                                if i == 0 {
+                                                    classes.push_str(" left")
+                                                } else if i + 1 == topics.len() {
+                                                    classes.push_str(" right")
+                                                } else {
+                                                    classes.push_str(" center")
+                                                }
+                                                classes
                                             }
-                                        }
-                                        onclick=&self.set_topic(topic.clone())>
-                                        {
-                                            serde_json::to_string(&topic).unwrap().replace(r#"""#, "")
-                                        }
-                                    </div>
-                                }
-                            })
-                        }
-                    </div>
-                </div>
-                <div class="tagselector">
-                    <div class="tagsprompt">
-                        { "Add any tags for your problem:" }
-                    </div>
-                    <div class="tags">
-                        {
-                            for self.builder.tags.iter().enumerate().map(|(i, tag)| html! {
-                                <div class="tag" onclick=&self.remove_tag(i)>{tag}</div>
-                            })
-                        }
-                    </div>
-                    <div class="addtag">
-                        <input class="taginput" type="text" oninput=&self.update_tag_text() />
-                        <button class="addtag" onclick=&self.create_tag()>{ "add tag" }</button>
-                    </div>
-                </div>
-                <div class="promptselector">
-                    <div class="promptprompt">
-                        { "Write a prompt: " }
-                    </div>
-                    <textarea class="promptinput" oninput=&self.update_prompt() />
-                </div>
-                <div class="problemtypeselector">
-                    <div class="problemtypeprompt">
-                        { "Select an answer type and fill it in: " }
-                    </div>
-                    <div class="problemtypeoptions">
-                        {
-                            for vec![ProblemType::MultipleChoice].iter().map(|p_type| {
-                                html! {
-                                    <div
-                                        class={
-                                            if self.builder.content.get_type() == *p_type {
-                                                "type selected"
-                                            } else {
-                                                "type"
+                                            onclick=&self.set_topic(topic.clone())>
+                                            {
+                                                serde_json::to_string(&topic).unwrap().replace(r#"""#, "")
                                             }
-                                        }
-                                        onclick=&self.set_content(ProblemContentBuilder::default_from_type(&p_type))>
-                                        {
-                                            serde_json::to_string(&p_type).unwrap().replace(r#"""#, "")
-                                        }
-                                    </div>
-                                }
-                            })
-                        }
+                                        </div>
+                                    }
+                                })
+                            }
+                        </div>
                     </div>
-                    {
-                        match &self.builder.content {
-                            ProblemContentBuilder::MultipleChoice { options, solution } => html!{
-                                <div class="contentselector">
-                                    <div class="contentprompt">
-                                        { "Select the correct choice below: " }
-                                    </div>
+                    <div class="selector">
+                        <div class="prompt">
+                            { "Step 2: Add any related tags" }
+                        </div>
+                        <div class="tags">
+                            {
+                                for self.builder.tags.iter().enumerate().map(|(i, tag)| html! {
+                                    <div class="tag" onclick=&self.remove_tag(i)>{tag}</div>
+                                })
+                            }
+                        </div>
+                        <div class="addtag">
+                            <input class="taginput" type="text" oninput=&self.update_tag_text() />
+                            <button class="addtag" onclick=&self.create_tag()>{ "Add tag" }</button>
+                        </div>
+                    </div>
+                    <div class="selector">
+                        <div class="prompt">
+                            { "Step 3: Write a prompt" }
+                        </div>
+                        <textarea class="promptinput" oninput=&self.update_prompt() />
+                    </div>
+                    <div class="selector">
+                        <div class="prompt">
+                            { "Step 4: Select an answer type" }
+                        </div>
+                        <div class="problemtypeoptions">
+                            {
+                                for problem_types.iter().enumerate().map(|(i, p_type)| {
+                                    html! {
+                                        <div
+                                            class={
+                                                let mut classes = "type".to_string();
+                                                if self.builder.content.get_type() == *p_type {
+                                                    classes.push_str(" selected");
+                                                }
+                                                if i == 0 {
+                                                    classes.push_str(" left");
+                                                } else if i + 1 == problem_types.len() {
+                                                    classes.push_str(" right");
+                                                } else {
+                                                    classes.push_str(" center");
+                                                }
+                                                classes
+                                            }
+                                            onclick=&self.set_content(ProblemContentBuilder::default_from_type(&p_type))>
+                                            {
+                                                serde_json::to_string(&p_type).unwrap().replace(r#"""#, "")
+                                            }
+                                        </div>
+                                    }
+                                })
+                            }
+                        </div>
+                    </div>
+                    <div class="selector">
+                        {
+                            match &self.builder.content {
+                                ProblemContentBuilder::MultipleChoice { options, solution } => html!{
                                     <div class="multiplechoice">
-                                        {
-                                            for options.iter().enumerate().map(|(i, option)| html! {
-                                                <div class="optionwrapper">
-                                                    <span class="optionmarker" onclick=&self.remove_choice(i)>{ "X" }</span>
-                                                    <div onclick=&self.add_solution(i) class={
-                                                        if Some(i) == *solution {
-                                                            "option selected"
-                                                        } else {
-                                                            "option"
-                                                        }
-                                                    }>{option}</div>
-                                                </div>
-                                            })
-                                        }
+                                        <div class="prompt">
+                                            { "Step 5: Add choices and click the correct one" }
+                                        </div>
+                                        <div class="addchoice">
+                                            <input type="text" oninput=&self.update_choice() />
+                                            <button class="add" onclick=&self.add_choice()>{ "Add choice" }</button>
+                                        </div>
+                                        <div class="multiplechoicedisplay">
+                                            {
+                                                for options.iter().enumerate().map(|(i, option)| html! {
+                                                    <div class="optionwrapper">
+                                                        <span class="optionmarker" onclick=&self.remove_choice(i)>{ "X" }</span>
+                                                        <div onclick=&self.add_solution(i) class={
+                                                            if Some(i) == *solution {
+                                                                "option selected"
+                                                            } else {
+                                                                "option"
+                                                            }
+                                                        }>{option}</div>
+                                                    </div>
+                                                })
+                                            }
+                                        </div>
                                     </div>
-                                    <div class="addchoice">
-                                        <input type="text" oninput=&self.update_choice() />
-                                        <button class="add" onclick=&self.add_choice()>{ "Add choice" }</button>
-                                    </div>
-                                </div>
-                            },
-                            _ => unimplemented!("Not all problem types can be created rn")
+                                },
+                                _ => unimplemented!("Not all problem types can be created rn")
+                            }
                         }
-                    }
+                    </div>
+                    <button class="submitproblem" onclick=&self.finish_problem()>
+                        { "I'm all done!" }
+                    </button>
                 </div>
-                <button class="submitproblem" onclick=&self.finish_problem()>
-                    { "I'm all done!" }
-                </button>
             </div>
         }
     }

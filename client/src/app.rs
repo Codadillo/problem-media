@@ -44,6 +44,7 @@ impl Component for App {
             <div class="app">
                 <nav class="menu">
                 <RouterButton<AppRoute> route=AppRoute::Login>{"Log In"}</RouterButton<AppRoute>>
+                <RouterButton<AppRoute> route=AppRoute::Create>{"Create Problems"}</RouterButton<AppRoute>>
                 </nav>
                 <Router<AppRoute>
                     render = Router::render(|switch: AppRoute| {
