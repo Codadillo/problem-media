@@ -134,7 +134,7 @@ impl Component for App {
                             <div class="app">
                                 <nav class="menu">
                                     <span class="title">
-                                        { "AKSHAR" }
+                                        { "Enλgma" }
                                     </span>
                                     <div class="routes">
                                         <div class="createroute">
