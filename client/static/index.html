@@ -187,7 +187,7 @@
             background-color: #ededed;
             border-radius: 3px;
         }
-        .feed .prompt {
+        .feed .prompt, .feed .solution {
             padding: 10px;
             padding-left: 30px;
             padding-right: 30px;
@@ -199,6 +199,9 @@
             line-height: 30px;
             text-align: justify;
             text-justify: inter-word;
+        }
+        .feed .solution {
+            border-top: 1px solid black;
         }
         .feed .freeresponse {
             padding: 10px;
@@ -238,6 +241,20 @@
         .feed .option.selected {
             font-weight: bold;
             color: var(--navbar-compliment-color);
+        }
+        .feed .submitwrapper {
+            display: flex;
+            justify-content: center;
+        }
+        .feed .submit {
+            border-radius: 5px;
+            border: 1px solid var(--navbar-compliment-color);
+            padding: 5px;
+            margin-top: 10px;
+        }
+        .feed .submit:hover {
+            cursor: pointer;
+            background: var(--navbar-light-compliment-color);
         }
         .feed .footer {
             margin-top: 20px;

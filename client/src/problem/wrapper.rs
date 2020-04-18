@@ -23,7 +23,7 @@ pub enum ProblemStatus {
     Failed(String),
 }
 
-pub enum PromptPart {
+pub enum LatexablePart {
     Text(String),
     Latex(String),
 }
@@ -33,6 +33,7 @@ pub enum ProblemMsg {
     ToggleRec,
     RecSuccess(i32),
     RecFailure(String),
+    ToggleViewState,
 }
 
 #[derive(Debug, Clone, Properties)]
@@ -48,12 +49,18 @@ pub struct ProblemComponent {
     rec_ft: Option<FetchTask>,
     props: ProblemProps,
     problem: ProblemStatus,
-    problem_prompt: Vec<PromptPart>,
+    problem_prompt: Vec<LatexablePart>,
+    problem_explanation: Vec<LatexablePart>,
+    viewing_solution: bool,
 }
 
 impl ProblemComponent {
     fn toggle_recommend(&self) -> Callback<MouseEvent> {
         self.link.callback(move |_| ProblemMsg::ToggleRec)
+    }
+
+    fn toggle_view_state(&self) -> Callback<MouseEvent> {
+        self.link.callback(move |_| ProblemMsg::ToggleViewState)
     }
 
     fn send_problem_request(&mut self) -> FetchTask {
@@ -116,7 +123,9 @@ impl Component for ProblemComponent {
             rec_ft: None,
             problem: ProblemStatus::Loading,
             problem_prompt: vec![],
+            problem_explanation: vec![],
             props,
+            viewing_solution: false,
         };
         component.problem_ft = Some(component.send_problem_request());
         component
@@ -131,9 +140,19 @@ impl Component for ProblemComponent {
                         for (i, part) in problem.prompt.split("$$").enumerate() {
                             self.problem_prompt.push(
                                 if i % 2 == 0 {
-                                    PromptPart::Text(part.to_string())
+                                    LatexablePart::Text(part.to_string())
                                 } else {
-                                    PromptPart::Latex(part.to_string())
+                                    LatexablePart::Latex(part.to_string())
+                                }
+                            );
+                        }
+                        self.problem_explanation = vec![];
+                        for (i, part) in problem.explanation.split("$$").enumerate() {
+                            self.problem_explanation.push(
+                                if i % 2 == 0 {
+                                    LatexablePart::Text(part.to_string())
+                                } else {
+                                    LatexablePart::Latex(part.to_string())
                                 }
                             );
                         }
@@ -164,6 +183,10 @@ impl Component for ProblemComponent {
                 info!("Error when making rec: {}", error_message);
                 false
             }
+            ProblemMsg::ToggleViewState => {
+                self.viewing_solution = !self.viewing_solution;
+                true
+            }
         }
     }
 
@@ -183,38 +206,67 @@ impl Component for ProblemComponent {
                     </div>
 
                     <div class="prompt">
-                            {
-                                for self.problem_prompt.iter().map(|part| match part {
-                                    PromptPart::Text(text) => html! {
-                                        <span class="part">{ text }</span>
-                                    },
-                                    PromptPart::Latex(text) => html! {
-                                        <span class="part rendermath">{ text }</span>
-                                    }
-                                })
-                            }
-                        </div>
+                        {
+                            for self.problem_prompt.iter().map(|part| match part {
+                                LatexablePart::Text(text) => html! {
+                                    <span class="part">{ text }</span>
+                                },
+                                LatexablePart::Latex(text) => html! {
+                                    <span class="part rendermath">{ text }</span>
+                                }
+                            })
+                        }
+                    </div>
 
                     <div class="content">
                         {
-                            match &problem.content {
-                                ProblemContent::FreeResponse { restrictions, solution } => {
-                                    html! {
-                                        <FreeRespComponent restrictions={ restrictions } solution={ solution } />
-                                    }
+                            if self.viewing_solution {
+                                html! {
+                                    <div class="solution">
+                                        {
+                                            for self.problem_explanation.iter().map(|part| match part {
+                                                LatexablePart::Text(text) => html! {
+                                                    <span class="part">{ text }</span>
+                                                },
+                                                LatexablePart::Latex(text) => html! {
+                                                    <span class="part rendermath">{ text }</span>
+                                                }
+                                            })
+                                        }
+                                    </div>
                                 }
-                                ProblemContent::MultipleChoice { options, solution } => {
-                                    html! {
-                                        <MultChoiceComponent options={ options } solution={ solution } />
+                            } else {
+                                match &problem.content {
+                                    ProblemContent::FreeResponse { restrictions, solution } => {
+                                        html! {
+                                            <FreeRespComponent restrictions={ restrictions } solution={ solution } />
+                                        }
                                     }
-                                }
-                                ProblemContent::Checklist { options, solution } => {
-                                    html! {
-                                        <ChecklistComponent options={ options } solution={ solution } />
+                                    ProblemContent::MultipleChoice { options, solution } => {
+                                        html! {
+                                            <MultChoiceComponent options={ options } solution={ solution } />
+                                        }
+                                    }
+                                    ProblemContent::Checklist { options, solution } => {
+                                        html! {
+                                            <ChecklistComponent options={ options } solution={ solution } />
+                                        }
                                     }
                                 }
                             }
                         }
+                    </div>
+
+                    <div class="submitwrapper">
+                        <div class="submit" onclick=&self.toggle_view_state()>
+                            {
+                                if self.viewing_solution {
+                                    "Return to problem"
+                                } else {
+                                    "Submit solution and view owner's explanation"
+                                }
+                            }
+                        </div>
                     </div>
 
                     <div class="footer">
